@@ -102,7 +102,7 @@ const AnnouncementList = () => {
               
               <div className="announcement-meta">
                 <span>作者: {announcement.author}</span>
-                <span>发布时间: {dayjs(announcement.createdAt).format('YYYY-MM-DD HH:mm')}</span>
+                <span>上传时间: {dayjs(announcement.createdAt).format('YYYY-MM-DD HH:mm')}</span>
               </div>
               
               {/* 公告摘要 - 截取前200个字符 */}

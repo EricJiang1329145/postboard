@@ -58,4 +58,10 @@ export const userApi = {
     const response = await api.post('/auth/login', { username, password });
     return response.data;
   },
+  
+  // 获取当前用户
+  getCurrentUser: async () => {
+    // 实际项目中应该使用认证令牌来获取当前用户
+    return null;
+  }
 };

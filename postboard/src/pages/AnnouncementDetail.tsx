@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAnnouncementStore } from '../context/useStore';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import dayjs from 'dayjs';
@@ -48,7 +49,7 @@ const AnnouncementDetail = () => {
             <h1>{announcement.title}</h1>
             <div className="announcement-meta" style={{ marginTop: '0.5rem' }}>
               <span>作者: {announcement.author}</span>
-              <span>发布时间: {dayjs(announcement.createdAt).format('YYYY-MM-DD HH:mm')}</span>
+              <span>上传时间: {dayjs(announcement.createdAt).format('YYYY-MM-DD HH:mm')}</span>
               {announcement.updatedAt !== announcement.createdAt && (
                 <span>更新时间: {dayjs(announcement.updatedAt).format('YYYY-MM-DD HH:mm')}</span>
               )}
@@ -60,12 +61,35 @@ const AnnouncementDetail = () => {
         </div>
 
         <div className="markdown-content" style={{ marginTop: '2rem' }}>
+          <style jsx>{`
+            .markdown-content table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 1rem 0;
+            }
+            .markdown-content th, .markdown-content td {
+              border: 1px solid #ddd;
+              padding: 8px;
+              text-align: left;
+            }
+            .markdown-content th {
+              background-color: #f2f2f2;
+              font-weight: bold;
+            }
+            .markdown-content tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            .markdown-content tr:hover {
+              background-color: #f5f5f5;
+            }
+          `}</style>
           <ReactMarkdown
             remarkPlugins={[
               [remarkMath as any, {
                 singleDollarTextMath: true,
                 doubleDollarDisplayMath: true
-              }]
+              }],
+              remarkGfm as any
             ]}
             rehypePlugins={[
               [rehypeKatex as any, {

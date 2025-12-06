@@ -25,8 +25,8 @@ const Login = () => {
     resolver: yupResolver(loginSchema)
   });
 
-  const onSubmit = (data: LoginForm) => {
-    const success = login(data.username, data.password);
+  const onSubmit = async (data: LoginForm) => {
+    const success = await login(data.username, data.password);
     if (success) {
       navigate('/admin');
     } else {

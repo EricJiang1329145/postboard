@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Announcement, User } from '../types';
 import dayjs from 'dayjs';
-import { announcementApi } from '../services/announcementApi';
+import { announcementApi, userApi } from '../services/announcementApi';
 
 // 生成唯一ID
 const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
@@ -180,22 +180,24 @@ export const useAnnouncementStore = create<AnnouncementStore & {
   })
 );
 
-export const useUserStore = create<UserStore>()(
+export const useUserStore = create<UserStore & {
+  login: (username: string, password: string) => Promise<boolean>;
+}>()(
   persist(
     (set) => ({
       currentUser: null,
       users: initialUsers,
       
-      login: (username, password) => {
-        // 简单的用户名密码验证，实际项目中应该使用API调用
-        const user = initialUsers.find(
-          (user) => user.username === username && user.password === password
-        );
-        if (user) {
+      login: async (username, password) => {
+        try {
+          // 使用后端API进行登录验证
+          const user = await userApi.login(username, password);
           set({ currentUser: user });
           return true;
+        } catch (error) {
+          console.error('登录失败:', error);
+          return false;
         }
-        return false;
       },
       
       logout: () => {
@@ -203,6 +205,7 @@ export const useUserStore = create<UserStore>()(
       },
       
       register: (username, password, role) => {
+        // 实际项目中应该使用API调用
         const newUser: User = {
           id: generateId(),
           username,

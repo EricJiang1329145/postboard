@@ -1,6 +1,64 @@
-# Tauri + React + Typescript
+# 公告板系统
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+基于 Tauri + React + Typescript + Vite 开发的公告板系统，支持 Markdown 编辑、图片上传、数学公式渲染等功能。
+
+## 功能特性
+
+- 📝 **Markdown 编辑**：支持完整的 Markdown 语法
+- 🖼️ **图片上传**：支持在 Markdown 中直接上传图片
+- 📊 **数学公式**：支持 KaTeX 数学公式渲染
+- 🏷️ **分类管理**：支持公告分类
+- 📅 **定时发布**：支持设置定时发布时间
+- 📌 **置顶功能**：支持公告置顶和优先级管理
+- 👤 **用户认证**：简单的用户登录系统
+
+## 技术栈
+
+- **前端**：React + TypeScript + Vite
+- **后端**：Node.js + Express + SQLite
+- **构建工具**：Tauri
+- **编辑器**：@uiw/react-md-editor
+- **数学公式**：KaTeX
+- **状态管理**：zustand
+
+## 安装与运行
+
+### 前端开发
+
+```bash
+npm install
+npm run dev
+```
+
+### 后端开发
+
+```bash
+cd server
+npm install
+node index.js
+```
+
+## 使用说明
+
+### 图片上传
+
+在创建或编辑公告时，可以：
+1. 点击编辑器上方的图片图标
+2. 选择要上传的图片文件
+3. 上传完成后，图片会自动插入到 Markdown 编辑器中
+
+### 数学公式
+
+使用 KaTeX 语法编写数学公式：
+- 行内公式：`$E=mc^2$`
+- 块级公式：`$$E=mc^2$$`
+
+## 更新日志
+
+### 最新更新
+- 新增图片上传功能，支持在 Markdown 编辑器中直接上传图片
+- 优化了 Markdown 编辑器的使用体验
+- 修复了一些已知问题
 
 ## Recommended IDE Setup
 

@@ -4,6 +4,45 @@ const cors = require('cors');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
+const bcrypt = require('bcrypt');
+
+// 确保uploads目录存在
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// 配置multer存储
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// 创建multer实例
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 限制5MB
+  },
+  fileFilter: (req, file, cb) => {
+    // 只允许图片文件
+    const filetypes = /jpe?g|png|gif|webp|svg/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('只允许上传图片文件！'));
+  }
+});
 
 // 创建 Express 应用
 const app = express();
@@ -14,6 +53,9 @@ app.use(cors()); // 允许跨域请求
 app.use(morgan('dev')); // 日志记录
 app.use(bodyParser.json()); // 解析 JSON 请求体
 app.use(bodyParser.urlencoded({ extended: true })); // 解析 URL 编码请求体
+
+// 静态文件服务
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // 创建数据库连接
 const dbPath = path.join(__dirname, 'database.db');
@@ -264,9 +306,10 @@ app.delete('/api/announcements/:id', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
   
+  // 先根据用户名查找用户
   db.get(
-    `SELECT * FROM users WHERE username = ? AND password = ?`,
-    [username, password],
+    `SELECT * FROM users WHERE username = ?`,
+    [username],
     (err, row) => {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -276,9 +319,40 @@ app.post('/api/auth/login', (req, res) => {
         res.status(401).json({ error: '用户名或密码错误' });
         return;
       }
-      // 删除密码字段后返回用户信息
-      const { password: _, ...user } = row;
-      res.json(user);
+      
+      // 检查密码是否是哈希密码（bcrypt哈希以$2b$开头）
+      const isHashedPassword = row.password.startsWith('$2b$');
+      
+      // 验证密码
+      let passwordMatch = false;
+      if (isHashedPassword) {
+        // 使用bcrypt验证哈希密码
+        bcrypt.compare(password, row.password, (bcryptErr, result) => {
+          if (bcryptErr) {
+            res.status(500).json({ error: bcryptErr.message });
+            return;
+          }
+          if (!result) {
+            res.status(401).json({ error: '用户名或密码错误' });
+            return;
+          }
+          
+          // 删除密码字段后返回用户信息
+          const { password: _, ...user } = row;
+          res.json(user);
+        });
+      } else {
+        // 直接比较明文密码（用于向后兼容）
+        passwordMatch = password === row.password;
+        if (!passwordMatch) {
+          res.status(401).json({ error: '用户名或密码错误' });
+          return;
+        }
+        
+        // 删除密码字段后返回用户信息
+        const { password: _, ...user } = row;
+        res.json(user);
+      }
     }
   );
 });
@@ -293,6 +367,25 @@ app.get('/api/categories', (req, res) => {
     const categories = rows.map(row => row.category);
     res.json(categories);
   });
+});
+
+// 图片上传路由
+app.post('/api/upload', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: '没有上传文件' });
+    }
+    
+    // 返回图片URL
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.json({ 
+      success: true, 
+      url: imageUrl,
+      filename: req.file.filename 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // 获取所有公告（管理员）

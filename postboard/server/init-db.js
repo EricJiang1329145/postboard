@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcrypt');
 
 // 创建数据库连接
 const dbPath = path.join(__dirname, 'database.db');
@@ -48,79 +49,35 @@ function initDatabase() {
       }
       console.log('公告表创建成功');
       
-      // 初始化默认管理员用户
-      db.run(
-        `INSERT OR IGNORE INTO users (id, username, password, role, createdAt) VALUES (?, ?, ?, ?, ?)`,
-        ['1', 'admin', 'admin123', 'admin', new Date().toISOString()],
-        (err) => {
-          if (err) {
-            console.error('插入管理员用户失败:', err.message);
-          } else {
-            console.log('管理员用户插入成功');
-          }
+      // 生成bcrypt哈希密码
+      bcrypt.hash('admin123', 10, (hashErr, hashedPassword) => {
+        if (hashErr) {
+          console.error('密码哈希失败:', hashErr.message);
+          return;
         }
-      );
-      
-      // 初始化示例公告1
-      db.run(
-        `INSERT OR IGNORE INTO announcements (id, title, content, category, author, createdAt, updatedAt, isPublished, scheduledPublishAt, publishStatus, isPinned, pinnedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          '1',
-          '欢迎使用学校公告栏系统',
-          '# 欢迎使用\n\n这是一个学校公告栏系统，用于发布和管理学校公告。\n\n## 功能特点\n\n- 支持Markdown格式\n- 响应式设计\n- 分类管理\n- 搜索功能\n- 置顶功能\n\n请遵守公告发布规范，文明发言。',
-          '系统通知',
-          '管理员',
-          new Date(Date.now() - 86400000).toISOString(),
-          new Date(Date.now() - 86400000).toISOString(),
-          1,
-          null,
-          'published',
-          1,
-          new Date(Date.now() - 86400000).toISOString()
-        ],
-        (err) => {
-          if (err) {
-            console.error('插入示例公告1失败:', err.message);
-          } else {
-            console.log('示例公告1插入成功');
-          }
-        }
-      );
-      
-      // 初始化示例公告2
-      db.run(
-        `INSERT OR IGNORE INTO announcements (id, title, content, category, author, createdAt, updatedAt, isPublished, scheduledPublishAt, publishStatus, isPinned, pinnedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          '2',
-          '2024年春季学期开学通知',
-          '# 2024年春季学期开学通知\n\n各位同学：\n\n根据学校安排，2024年春季学期将于2月20日正式开学，请大家提前做好准备。\n\n## 报到时间\n\n- 本科生：2月19日\n- 研究生：2月20日\n\n## 注意事项\n\n1. 请携带学生证和身份证\n2. 检查宿舍水电情况\n3. 按时参加开学典礼\n\n祝大家新学期愉快！',
-          '学校通知',
-          '教务处',
-          new Date(Date.now() - 172800000).toISOString(),
-          new Date(Date.now() - 172800000).toISOString(),
-          1,
-          null,
-          'published',
-          0,
-          null
-        ],
-        (err) => {
-          if (err) {
-            console.error('插入示例公告2失败:', err.message);
-          } else {
-            console.log('示例公告2插入成功');
-          }
-          
-          // 所有操作完成后关闭数据库连接
-          db.close((err) => {
+        
+        // 初始化默认管理员用户
+        db.run(
+          `INSERT OR IGNORE INTO users (id, username, password, role, createdAt) VALUES (?, ?, ?, ?, ?)`,
+          ['1', 'admin', hashedPassword, 'admin', new Date().toISOString()],
+          (err) => {
             if (err) {
-              console.error('数据库关闭失败:', err.message);
+              console.error('插入管理员用户失败:', err.message);
             } else {
-              console.log('数据库关闭成功');
+              console.log('管理员用户插入成功');
             }
-          });
-        }
-      );
+            
+            // 所有操作完成后关闭数据库连接
+            db.close((err) => {
+              if (err) {
+                console.error('数据库关闭失败:', err.message);
+              } else {
+                console.log('数据库关闭成功');
+              }
+            });
+          }
+        );
+      });
     });
   });
 }
