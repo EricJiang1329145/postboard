@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Announcement, User } from '../types';
 import dayjs from 'dayjs';
 import { announcementApi } from '../services/announcementApi';
@@ -180,37 +181,43 @@ export const useAnnouncementStore = create<AnnouncementStore & {
 );
 
 export const useUserStore = create<UserStore>()(
-  (set) => ({
-    currentUser: null,
-    users: initialUsers,
-    
-    login: (username, password) => {
-      // 简单的用户名密码验证，实际项目中应该使用API调用
-      const user = initialUsers.find(
-        (user) => user.username === username && user.password === password
-      );
-      if (user) {
-        set({ currentUser: user });
-        return true;
+  persist(
+    (set) => ({
+      currentUser: null,
+      users: initialUsers,
+      
+      login: (username, password) => {
+        // 简单的用户名密码验证，实际项目中应该使用API调用
+        const user = initialUsers.find(
+          (user) => user.username === username && user.password === password
+        );
+        if (user) {
+          set({ currentUser: user });
+          return true;
+        }
+        return false;
+      },
+      
+      logout: () => {
+        set({ currentUser: null });
+      },
+      
+      register: (username, password, role) => {
+        const newUser: User = {
+          id: generateId(),
+          username,
+          password,
+          role,
+          createdAt: dayjs().toISOString()
+        };
+        set((state) => ({
+          users: [...state.users, newUser]
+        }));
       }
-      return false;
-    },
-    
-    logout: () => {
-      set({ currentUser: null });
-    },
-    
-    register: (username, password, role) => {
-      const newUser: User = {
-        id: generateId(),
-        username,
-        password,
-        role,
-        createdAt: dayjs().toISOString()
-      };
-      set((state) => ({
-        users: [...state.users, newUser]
-      }));
+    }),
+    {
+      name: 'user-storage', // localStorage 存储名称
+      partialize: (state) => ({ currentUser: state.currentUser }) // 只存储 currentUser 字段
     }
-  })
+  )
 );
