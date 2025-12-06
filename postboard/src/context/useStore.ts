@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { Announcement, User } from '../types';
 import dayjs from 'dayjs';
+import { announcementApi } from '../services/announcementApi';
 
 // 生成唯一ID
 const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
@@ -28,14 +28,17 @@ const initialAnnouncements: Announcement[] = [
   {
     id: '1',
     title: '欢迎使用学校公告栏系统',
-    content: '# 欢迎使用\n\n这是一个学校公告栏系统，用于发布和管理学校公告。\n\n## 功能特点\n\n- 支持Markdown格式\n- 响应式设计\n- 分类管理\n- 搜索功能\n\n请遵守公告发布规范，文明发言。',
+    content: '# 欢迎使用\n\n这是一个学校公告栏系统，用于发布和管理学校公告。\n\n## 功能特点\n\n- 支持Markdown格式\n- 响应式设计\n- 分类管理\n- 搜索功能\n- 置顶功能\n- 优先级管理\n\n请遵守公告发布规范，文明发言。',
     category: '系统通知',
     author: '管理员',
     createdAt: dayjs().subtract(1, 'day').toISOString(),
     updatedAt: dayjs().subtract(1, 'day').toISOString(),
     isPublished: true,
     scheduledPublishAt: null,
-    publishStatus: 'published'
+    publishStatus: 'published',
+    isPinned: true,
+    pinnedAt: dayjs().subtract(1, 'day').toISOString(),
+    priority: 5 // 最高优先级
   },
   {
     id: '2',
@@ -47,7 +50,10 @@ const initialAnnouncements: Announcement[] = [
     updatedAt: dayjs().subtract(2, 'day').toISOString(),
     isPublished: true,
     scheduledPublishAt: null,
-    publishStatus: 'published'
+    publishStatus: 'published',
+    isPinned: false,
+    pinnedAt: null,
+    priority: 1 // 默认优先级
   }
 ];
 
@@ -81,156 +87,130 @@ const checkScheduledAnnouncements = (announcements: Announcement[]): Announcemen
   return updatedAnnouncements;
 };
 
-export const useAnnouncementStore = create<AnnouncementStore & { checkScheduledAnnouncements: () => void }>()(
-  persist(
-    (set, get) => ({
-      announcements: initialAnnouncements,
-      
-      addAnnouncement: (announcement) => {
-        // 确定发布状态
-        let publishStatus: 'draft' | 'scheduled' | 'published' = 'draft';
-        let isPublished = false;
-        
-        if (announcement.isPublished) {
-          publishStatus = 'published';
-          isPublished = true;
-        } else if (announcement.scheduledPublishAt) {
-          publishStatus = 'scheduled';
-          isPublished = false;
-        }
-        
-        const newAnnouncement: Announcement = {
-          ...announcement,
-          id: generateId(),
-          createdAt: dayjs().toISOString(),
-          updatedAt: dayjs().toISOString(),
-          isPublished,
-          publishStatus
-        };
-        
-        const updatedAnnouncements = [newAnnouncement, ...get().announcements];
-        // 检查并发布到期的定时公告
-        const finalAnnouncements = checkScheduledAnnouncements(updatedAnnouncements);
-        
-        set({ announcements: finalAnnouncements });
-      },
-      
-      updateAnnouncement: (id, updates) => {
-        const updatedAnnouncements = get().announcements.map((announcement) => {
-          if (announcement.id === id) {
-            // 确定发布状态
-            let publishStatus: 'draft' | 'scheduled' | 'published' = announcement.publishStatus;
-            let isPublished = announcement.isPublished;
-            
-            if (updates.isPublished !== undefined) {
-              if (updates.isPublished) {
-                publishStatus = 'published';
-                isPublished = true;
-              } else if (updates.scheduledPublishAt) {
-                publishStatus = 'scheduled';
-                isPublished = false;
-              } else {
-                publishStatus = 'draft';
-                isPublished = false;
-              }
-            } else if (updates.scheduledPublishAt) {
-              publishStatus = 'scheduled';
-              isPublished = false;
-            }
-            
-            return {
-              ...announcement,
-              ...updates,
-              isPublished,
-              publishStatus,
-              updatedAt: dayjs().toISOString()
-            };
-          }
-          return announcement;
-        });
-        
-        // 检查并发布到期的定时公告
-        const finalAnnouncements = checkScheduledAnnouncements(updatedAnnouncements);
-        
-        set({ announcements: finalAnnouncements });
-      },
-      
-      deleteAnnouncement: (id) => {
+export const useAnnouncementStore = create<AnnouncementStore & {
+  checkScheduledAnnouncements: () => void;
+  fetchAnnouncements: () => Promise<void>;
+}>()(
+  (set, get) => ({
+    announcements: initialAnnouncements,
+    
+    // 获取公告列表
+    fetchAnnouncements: async () => {
+      try {
+        const announcements = await announcementApi.getAllAnnouncementsForAdmin();
+        set({ announcements });
+      } catch (error) {
+        console.error('获取公告列表失败:', error);
+      }
+    },
+    
+    addAnnouncement: async (announcement) => {
+      try {
+        const newAnnouncement = await announcementApi.createAnnouncement(announcement);
+        set((state) => ({
+          announcements: [newAnnouncement, ...state.announcements]
+        }));
+      } catch (error) {
+        console.error('添加公告失败:', error);
+      }
+    },
+    
+    updateAnnouncement: async (id, updates) => {
+      try {
+        const updatedAnnouncement = await announcementApi.updateAnnouncement(id, updates);
+        set((state) => ({
+          announcements: state.announcements.map((announcement) => 
+            announcement.id === id ? updatedAnnouncement : announcement
+          )
+        }));
+      } catch (error) {
+        console.error('更新公告失败:', error);
+      }
+    },
+    
+    deleteAnnouncement: async (id) => {
+      try {
+        await announcementApi.deleteAnnouncement(id);
         set((state) => ({
           announcements: state.announcements.filter((announcement) => announcement.id !== id)
         }));
-      },
-      
-      getAnnouncementById: (id) => {
-        return get().announcements.find((announcement) => announcement.id === id);
-      },
-      
-      filterAnnouncements: (keyword, category) => {
-        const announcements = get().announcements;
-        
-        return announcements.filter((announcement) => {
-          const matchesKeyword = keyword
-            ? announcement.title.toLowerCase().includes(keyword.toLowerCase()) ||
-              announcement.content.toLowerCase().includes(keyword.toLowerCase())
-            : true;
-          const matchesCategory = category ? announcement.category === category : true;
-          return matchesKeyword && matchesCategory && announcement.isPublished;
-        }).sort((a, b) => {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
-      },
-      
-      // 手动检查并发布到期的定时公告
-      checkScheduledAnnouncements: () => {
-        const announcements = get().announcements;
-        const updatedAnnouncements = checkScheduledAnnouncements(announcements);
-        if (updatedAnnouncements !== announcements) {
-          set({ announcements: updatedAnnouncements });
-        }
+      } catch (error) {
+        console.error('删除公告失败:', error);
       }
-    }),
-    {
-      name: 'announcement-storage',
+    },
+    
+    getAnnouncementById: (id) => {
+      return get().announcements.find((announcement) => announcement.id === id);
+    },
+    
+    filterAnnouncements: (keyword, category) => {
+      const announcements = get().announcements;
+      
+      return announcements.filter((announcement) => {
+        const matchesKeyword = keyword
+          ? announcement.title.toLowerCase().includes(keyword.toLowerCase()) ||
+            announcement.content.toLowerCase().includes(keyword.toLowerCase())
+          : true;
+        const matchesCategory = category ? announcement.category === category : true;
+        return matchesKeyword && matchesCategory && announcement.isPublished;
+      }).sort((a, b) => {
+        // 先按置顶状态排序，置顶的排在前面
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        // 然后按优先级排序，数字越大优先级越高
+        if (a.isPinned && b.isPinned) {
+          if (a.priority !== b.priority) {
+            return b.priority - a.priority;
+          }
+        }
+        // 最后按创建时间排序，最新的排在前面
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+    },
+    
+    // 手动检查并发布到期的定时公告
+    checkScheduledAnnouncements: () => {
+      const announcements = get().announcements;
+      const updatedAnnouncements = checkScheduledAnnouncements(announcements);
+      if (updatedAnnouncements !== announcements) {
+        set({ announcements: updatedAnnouncements });
+      }
     }
-  )
+  })
 );
 
 export const useUserStore = create<UserStore>()(
-  persist(
-    (set, get) => ({
-      currentUser: null,
-      users: initialUsers,
-      
-      login: (username, password) => {
-        const user = get().users.find(
-          (user) => user.username === username && user.password === password
-        );
-        if (user) {
-          set({ currentUser: user });
-          return true;
-        }
-        return false;
-      },
-      
-      logout: () => {
-        set({ currentUser: null });
-      },
-      
-      register: (username, password, role) => {
-        const newUser: User = {
-          id: generateId(),
-          username,
-          password,
-          role,
-          createdAt: dayjs().toISOString()
-        };
-        set((state) => ({
-          users: [...state.users, newUser]
-        }));
+  (set) => ({
+    currentUser: null,
+    users: initialUsers,
+    
+    login: (username, password) => {
+      // 简单的用户名密码验证，实际项目中应该使用API调用
+      const user = initialUsers.find(
+        (user) => user.username === username && user.password === password
+      );
+      if (user) {
+        set({ currentUser: user });
+        return true;
       }
-    }),
-    {
-      name: 'user-storage',
+      return false;
+    },
+    
+    logout: () => {
+      set({ currentUser: null });
+    },
+    
+    register: (username, password, role) => {
+      const newUser: User = {
+        id: generateId(),
+        username,
+        password,
+        role,
+        createdAt: dayjs().toISOString()
+      };
+      set((state) => ({
+        users: [...state.users, newUser]
+      }));
     }
-  )
+  })
 );

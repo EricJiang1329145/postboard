@@ -28,7 +28,9 @@ const EditAnnouncement = () => {
       category: '学校通知',
       isPublished: false,
       scheduledPublishAt: null,
-      publishStatus: 'draft'
+      publishStatus: 'draft',
+      isPinned: false,
+      priority: 3 // 默认优先级
     }
   });
 
@@ -44,6 +46,8 @@ const EditAnnouncement = () => {
       setValue('content', announcement.content);
       setValue('category', announcement.category);
       setValue('isPublished', announcement.isPublished);
+      setValue('isPinned', announcement.isPinned);
+      setValue('priority', announcement.priority);
     } else {
       navigate('/admin/announcements');
     }
@@ -51,7 +55,11 @@ const EditAnnouncement = () => {
 
   const onSubmit = (data: AnnouncementForm) => {
     if (id) {
-      updateAnnouncement(id, data);
+      updateAnnouncement(id, {
+        ...data,
+        isPinned: data.isPinned || false,
+        priority: data.priority || 1
+      });
       navigate('/admin/announcements');
     }
   };
@@ -191,6 +199,33 @@ const EditAnnouncement = () => {
                 />
               </div>
             )}
+          </div>
+          
+          {/* 置顶选项 */}
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              id="isPinned"
+              type="checkbox"
+              {...register('isPinned')}
+            />
+            <label htmlFor="isPinned" style={{ margin: 0 }}>置顶公告</label>
+          </div>
+          
+          {/* 优先级选择 */}
+          <div className="form-group" style={{ marginLeft: '2rem' }}>
+            <label htmlFor="priority" style={{ marginBottom: '0.5rem', display: 'block' }}>置顶优先级（数字越大优先级越高）</label>
+            <select
+              id="priority"
+              {...register('priority', {
+                valueAsNumber: true
+              })}
+            >
+              <option value={1}>1 - 最低</option>
+              <option value={2}>2</option>
+              <option value={3} selected>3 - 中等</option>
+              <option value={4}>4</option>
+              <option value={5}>5 - 最高</option>
+            </select>
           </div>
         </div>
         

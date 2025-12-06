@@ -5,31 +5,33 @@ import dayjs from 'dayjs';
 import { SearchParams } from '../types';
 
 const AnnouncementList = () => {
-  const { announcements, filterAnnouncements } = useAnnouncementStore();
+  const { announcements, filterAnnouncements, fetchAnnouncements } = useAnnouncementStore();
   const [searchParams, setSearchParams] = useState<SearchParams>({
     keyword: '',
     category: '',
     sortBy: 'createdAt',
     order: 'desc'
   });
-  const [filteredAnnouncements, setFilteredAnnouncements] = useState(
-    announcements.filter(a => a.isPublished)
-  );
+  const [filteredAnnouncements, setFilteredAnnouncements] = useState<typeof announcements>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
-  // 提取所有唯一分类
+  // 页面加载时获取公告列表
   useEffect(() => {
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  // 当公告列表变化时，更新过滤结果和分类
+  useEffect(() => {
+    // 提取所有唯一分类
     const uniqueCategories = Array.from(
       new Set(announcements.map(a => a.category))
     );
     setCategories(uniqueCategories);
-  }, [announcements]);
-
-  // 过滤公告
-  useEffect(() => {
+    
+    // 过滤公告
     const filtered = filterAnnouncements(searchParams.keyword, searchParams.category);
     setFilteredAnnouncements(filtered);
-  }, [searchParams, announcements, filterAnnouncements]);
+  }, [announcements, filterAnnouncements, searchParams]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchParams(prev => ({ ...prev, keyword: e.target.value }));
@@ -76,10 +78,22 @@ const AnnouncementList = () => {
           filteredAnnouncements.map(announcement => (
             <div key={announcement.id} className="announcement-item">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <h3>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Link to={`/announcement/${announcement.id}`}>
                     {announcement.title}
                   </Link>
+                  {announcement.isPinned && (
+                    <span style={{ 
+                      backgroundColor: '#e74c3c', 
+                      color: 'white', 
+                      padding: '0.125rem 0.5rem', 
+                      borderRadius: '4px', 
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
+                    }}>
+                      置顶
+                    </span>
+                  )}
                 </h3>
                 <span className="announcement-category">
                   {announcement.category}

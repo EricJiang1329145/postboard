@@ -10,6 +10,9 @@ export interface Announcement {
   isPublished: boolean;
   scheduledPublishAt: string | null; // 定时发布时间
   publishStatus: 'draft' | 'scheduled' | 'published'; // 发布状态：草稿、待发布、已发布
+  isPinned: boolean; // 是否置顶
+  pinnedAt: string | null; // 置顶时间
+  priority: number; // 置顶优先级（1-5，数字越大优先级越高）
 }
 
 // 用户类型定义
@@ -35,6 +38,9 @@ export interface AnnouncementForm {
   isPublished: boolean;
   scheduledPublishAt: string | null; // 定时发布时间
   publishStatus: 'draft' | 'scheduled' | 'published'; // 发布状态
+  isPinned?: boolean; // 是否置顶（可选）
+  pinnedAt?: string | null; // 置顶时间（可选）
+  priority?: number; // 置顶优先级（可选，1-5）
 }
 
 // 搜索参数类型

@@ -28,7 +28,9 @@ const CreateAnnouncement = () => {
       category: '学校通知',
       isPublished: false,
       scheduledPublishAt: null,
-      publishStatus: 'draft'
+      publishStatus: 'draft',
+      isPinned: false,
+      priority: 3 // 默认优先级
     }
   });
 
@@ -37,9 +39,13 @@ const CreateAnnouncement = () => {
   const content = watch('content');
 
   const onSubmit = (data: AnnouncementForm) => {
+    const { pinnedAt, ...restData } = data;
     addAnnouncement({
-      ...data,
-      author: currentUser?.username || '管理员'
+      ...restData,
+      author: currentUser?.username || '管理员',
+      isPinned: restData.isPinned || false,
+      priority: restData.priority || 1,
+      pinnedAt: null // 由store内部根据isPinned值处理实际的置顶时间
     });
     navigate('/admin/announcements');
   };
@@ -179,6 +185,33 @@ const CreateAnnouncement = () => {
                 />
               </div>
             )}
+          </div>
+          
+          {/* 置顶选项 */}
+          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              id="isPinned"
+              type="checkbox"
+              {...register('isPinned')}
+            />
+            <label htmlFor="isPinned" style={{ margin: 0 }}>置顶公告</label>
+          </div>
+          
+          {/* 优先级选择 */}
+          <div className="form-group" style={{ marginLeft: '2rem' }}>
+            <label htmlFor="priority" style={{ marginBottom: '0.5rem', display: 'block' }}>置顶优先级（数字越大优先级越高）</label>
+            <select
+              id="priority"
+              {...register('priority', {
+                valueAsNumber: true
+              })}
+            >
+              <option value={1}>1 - 最低</option>
+              <option value={2}>2</option>
+              <option value={3} selected>3 - 中等</option>
+              <option value={4}>4</option>
+              <option value={5}>5 - 最高</option>
+            </select>
           </div>
         </div>
         

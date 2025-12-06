@@ -9,20 +9,32 @@ import dayjs from 'dayjs';
 
 const AnnouncementDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { getAnnouncementById } = useAnnouncementStore();
+  const { getAnnouncementById, fetchAnnouncements } = useAnnouncementStore();
   const [announcement, setAnnouncement] = useState(
     getAnnouncementById(id || '')
   );
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const foundAnnouncement = getAnnouncementById(id || '');
-    if (!foundAnnouncement || !foundAnnouncement.isPublished) {
-      navigate('/');
-    } else {
-      setAnnouncement(foundAnnouncement);
-    }
-  }, [id, getAnnouncementById, navigate]);
+    // 先获取最新的公告列表
+    const loadAnnouncement = async () => {
+      await fetchAnnouncements();
+      const foundAnnouncement = getAnnouncementById(id || '');
+      setLoading(false);
+      if (!foundAnnouncement || !foundAnnouncement.isPublished) {
+        navigate('/');
+      } else {
+        setAnnouncement(foundAnnouncement);
+      }
+    };
+
+    loadAnnouncement();
+  }, [id, getAnnouncementById, navigate, fetchAnnouncements]);
+
+  if (loading) {
+    return <div className="loading">加载中...</div>;
+  }
 
   if (!announcement) {
     return <div className="loading">加载中...</div>;
