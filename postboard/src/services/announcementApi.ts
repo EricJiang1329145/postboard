@@ -71,3 +71,30 @@ export const userApi = {
     return response.data;
   }
 };
+
+// 管理员管理相关API
+export const adminApi = {
+  // 获取所有管理员
+  getAllAdmins: async () => {
+    const response = await api.get('/admins');
+    return response.data;
+  },
+  
+  // 新增管理员
+  createAdmin: async (username: string, password: string, originalPassword: string, currentUser: string) => {
+    const response = await api.post('/admins', { username, password, originalPassword, currentUser });
+    return response.data;
+  },
+  
+  // 修改管理员密码
+  updateAdminPassword: async (id: string, newPassword: string, originalPassword: string, currentUser: string) => {
+    const response = await api.put(`/admins/${id}/password`, { newPassword, originalPassword, currentUser });
+    return response.data;
+  },
+  
+  // 删除管理员
+  deleteAdmin: async (id: string, currentUser: string) => {
+    const response = await api.delete(`/admins/${id}`, { data: { currentUser } });
+    return response.data;
+  }
+};

@@ -8,6 +8,7 @@ import CreateAnnouncement from '../pages/CreateAnnouncement';
 import EditAnnouncement from '../pages/EditAnnouncement';
 import AdminAnnouncements from '../pages/AdminAnnouncements';
 import ChangePassword from '../pages/ChangePassword';
+import AdminManagement from '../pages/AdminManagement';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -47,6 +48,9 @@ export const router = createBrowserRouter([
               },
               { path: 'change-password',
                 element: <ChangePassword />
+              },
+              { path: 'admin-management',
+                element: <AdminManagement />
               }
             ]
           }

@@ -474,6 +474,165 @@ app.post('/api/auth/change-password', (req, res) => {
   );
 });
 
+// 管理员管理 API（仅允许 winterless 用户访问）
+const isWinterlessUser = (req, res, next) => {
+  // 检查当前请求的用户是否是 winterless
+  // 注意：在实际项目中，应该使用认证令牌来获取当前用户
+  // 这里为了简化，我们假设只有 winterless 用户需要访问这些 API
+  // 在前端调用时，需要传递当前登录用户的信息
+  const { username } = req.body;
+  if (username !== 'winterless') {
+    res.status(403).json({ error: '没有权限访问此功能' });
+    return;
+  }
+  next();
+};
+
+// 获取所有管理员
+app.get('/api/admins', (req, res) => {
+  db.all(
+    `SELECT id, username, password, originalPassword, role, createdAt FROM users WHERE role = 'admin'`,
+    [],
+    (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json(rows);
+    }
+  );
+});
+
+// 新增管理员
+app.post('/api/admins', (req, res) => {
+  const { username, password, originalPassword, currentUser } = req.body;
+  
+  // 只有 winterless 用户可以添加管理员
+  if (currentUser !== 'winterless') {
+    res.status(403).json({ error: '只有winterless管理员可以添加新管理员' });
+    return;
+  }
+  
+  // 检查用户名是否已存在
+  db.get(
+    `SELECT * FROM users WHERE username = ?`,
+    [username],
+    (err, existingUser) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      if (existingUser) {
+        res.status(400).json({ error: '用户名已存在' });
+        return;
+      }
+      
+      // 哈希密码
+      bcrypt.hash(password, 10, (hashErr, hashedPassword) => {
+        if (hashErr) {
+          res.status(500).json({ error: hashErr.message });
+          return;
+        }
+        
+        // 生成唯一ID
+        const id = Date.now().toString();
+        const createdAt = new Date().toISOString();
+        
+        // 插入新管理员，保存原始密码
+        db.run(
+          `INSERT INTO users (id, username, password, originalPassword, role, createdAt) VALUES (?, ?, ?, ?, ?, ?)`,
+          [id, username, hashedPassword, originalPassword || password, 'admin', createdAt],
+          (insertErr) => {
+            if (insertErr) {
+              res.status(500).json({ error: insertErr.message });
+              return;
+            }
+            res.json({ success: true, message: '管理员添加成功' });
+          }
+        );
+      });
+    }
+  );
+});
+
+// 修改管理员密码
+app.put('/api/admins/:id/password', (req, res) => {
+  const { id } = req.params;
+  const { newPassword, originalPassword, currentUser } = req.body;
+  
+  // 只有 winterless 用户可以修改管理员密码
+  if (currentUser !== 'winterless') {
+    res.status(403).json({ error: '只有winterless管理员可以修改管理员密码' });
+    return;
+  }
+  
+  // 哈希新密码
+  bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
+    if (hashErr) {
+      res.status(500).json({ error: hashErr.message });
+      return;
+    }
+    
+    // 更新密码和原始密码
+    db.run(
+      `UPDATE users SET password = ?, originalPassword = ?, updatedAt = ? WHERE id = ? AND role = 'admin'`,
+      [hashedPassword, originalPassword || newPassword, new Date().toISOString(), id],
+      (updateErr) => {
+        if (updateErr) {
+          res.status(500).json({ error: updateErr.message });
+          return;
+        }
+        res.json({ success: true, message: '管理员密码修改成功' });
+      }
+    );
+  });
+});
+
+// 删除管理员
+app.delete('/api/admins/:id', (req, res) => {
+  const { id } = req.params;
+  const { currentUser } = req.body;
+  
+  // 只有 winterless 用户可以删除管理员
+  if (currentUser !== 'winterless') {
+    res.status(403).json({ error: '只有winterless管理员可以删除管理员' });
+    return;
+  }
+  
+  // 不允许删除自己
+  db.get(
+    `SELECT username FROM users WHERE id = ?`,
+    [id],
+    (err, user) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      if (!user) {
+        res.status(404).json({ error: '管理员不存在' });
+        return;
+      }
+      if (user.username === 'winterless') {
+        res.status(400).json({ error: '不允许删除自己' });
+        return;
+      }
+      
+      // 删除管理员
+      db.run(
+        `DELETE FROM users WHERE id = ? AND role = 'admin'`,
+        [id],
+        (deleteErr) => {
+          if (deleteErr) {
+            res.status(500).json({ error: deleteErr.message });
+            return;
+          }
+          res.json({ success: true, message: '管理员删除成功' });
+        }
+      );
+    }
+  );
+});
+
 // 获取所有分类
 app.get('/api/categories', (req, res) => {
   db.all(`SELECT DISTINCT category FROM announcements`, (err, rows) => {
