@@ -101,6 +101,7 @@ const AdminAnnouncements = () => {
                   <div className="announcement-meta">
                     <span>作者: {announcement.author}</span>
                     <span>创建时间: {dayjs(announcement.createdAt).format('YYYY-MM-DD HH:mm')}</span>
+                    <span>阅读次数: {announcement.readCount}</span>
                     {announcement.scheduledPublishAt && (
                       <span style={{ color: '#f39c12', fontSize: '0.75rem', marginLeft: '0.5rem' }}>
                         定时发布: {dayjs(announcement.scheduledPublishAt).format('YYYY-MM-DD HH:mm')}

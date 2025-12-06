@@ -82,7 +82,7 @@ const AnnouncementList = () => {
                   <Link to={`/announcement/${announcement.id}`}>
                     {announcement.title}
                   </Link>
-                  {announcement.isPinned && (
+                  {announcement.isPinned ? (
                     <span style={{ 
                       backgroundColor: '#e74c3c', 
                       color: 'white', 
@@ -93,7 +93,7 @@ const AnnouncementList = () => {
                     }}>
                       置顶
                     </span>
-                  )}
+                  ) : null}
                 </h3>
                 <span className="announcement-category">
                   {announcement.category}
@@ -103,6 +103,7 @@ const AnnouncementList = () => {
               <div className="announcement-meta">
                 <span>作者: {announcement.author}</span>
                 <span>上传时间: {dayjs(announcement.createdAt).format('YYYY-MM-DD HH:mm')}</span>
+                <span>阅读次数: {announcement.readCount}</span>
               </div>
               
               {/* 公告摘要 - 截取前200个字符 */}

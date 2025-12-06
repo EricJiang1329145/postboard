@@ -63,5 +63,11 @@ export const userApi = {
   getCurrentUser: async () => {
     // 实际项目中应该使用认证令牌来获取当前用户
     return null;
+  },
+  
+  // 修改密码
+  changePassword: async (oldPassword: string, newPassword: string) => {
+    const response = await api.post('/auth/change-password', { oldPassword, newPassword });
+    return response.data;
   }
 };

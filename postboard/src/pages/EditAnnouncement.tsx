@@ -5,6 +5,7 @@ import MDEditor from '@uiw/react-md-editor';
 import remarkMath from 'remark-math';
 import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { useAnnouncementStore } from '../context/useStore';
 import { AnnouncementForm } from '../types';
@@ -31,6 +32,7 @@ const EditAnnouncement = () => {
       title: '',
       content: '',
       category: '学校通知',
+      author: '', // 作者名称
       isPublished: false,
       scheduledPublishAt: null,
       publishStatus: 'draft',
@@ -50,8 +52,38 @@ const EditAnnouncement = () => {
     
     try {
       const url = await uploadImage(file);
-      // 将图片插入到编辑器中
-      const newContent = `${content || ''}\n![${file.name}](${url})\n`;
+      
+      // 可配置的默认宽高参数
+      const defaultWidth = 500; // 默认宽度
+      const defaultHeight = 300; // 默认高度
+      
+      // 创建图片对象获取原始宽高比例
+      const img = new Image();
+      await new Promise((resolve) => {
+        img.onload = resolve;
+        img.src = URL.createObjectURL(file);
+      });
+      
+      // 计算保持原始比例的宽高
+      let width = defaultWidth;
+      let height = defaultHeight;
+      const aspectRatio = img.width / img.height;
+      
+      // 如果原始图片更宽，以宽度为主
+      if (img.width > img.height) {
+        width = defaultWidth;
+        height = Math.round(defaultWidth / aspectRatio);
+      } else {
+        // 如果原始图片更高，以高度为主
+        height = defaultHeight;
+        width = Math.round(defaultHeight * aspectRatio);
+      }
+      
+      // 释放URL对象
+      URL.revokeObjectURL(img.src);
+      
+      // 将图片插入到编辑器中（使用HTML img标签）
+      const newContent = `${content || ''}\n<img src="${url}" width="${width}" height="${height}" alt="${file.name}">\n`;
       setValue('content', newContent);
       setUploadMessage('图片上传成功！');
       setTimeout(() => setUploadMessage(''), 2000);
@@ -70,6 +102,7 @@ const EditAnnouncement = () => {
       setValue('title', announcement.title);
       setValue('content', announcement.content);
       setValue('category', announcement.category);
+      setValue('author', announcement.author); // 设置作者名称
       setValue('isPublished', announcement.isPublished);
       setValue('isPinned', announcement.isPinned);
       setValue('priority', announcement.priority);
@@ -116,6 +149,17 @@ const EditAnnouncement = () => {
             <option value="其他">其他</option>
           </select>
           {errors.category && <div className="error">{errors.category.message}</div>}
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="author">作者</label>
+          <input
+            id="author"
+            type="text"
+            placeholder="请输入作者名称"
+            {...register('author')}
+          />
+          {errors.author && <div className="error">{errors.author.message}</div>}
         </div>
         
         {/* Markdown文件上传组件 */}
@@ -257,7 +301,7 @@ const EditAnnouncement = () => {
                 <MDEditor.Markdown 
                   source={content || '# 请输入内容'} 
                   remarkPlugins={[remarkMath, remarkGfm]} 
-                  rehypePlugins={[rehypeKatex]}
+                  rehypePlugins={[rehypeKatex, rehypeRaw]}
                 />
               </div>
             ) : (
@@ -276,9 +320,40 @@ const EditAnnouncement = () => {
                   setUploadMessage('');
                   try {
                     const url = await uploadImage(file);
+                    
+                    // 可配置的默认宽高参数
+                    const defaultWidth = 500; // 默认宽度
+                    const defaultHeight = 300; // 默认高度
+                    
+                    // 创建图片对象获取原始宽高比例
+                    const img = new Image();
+                    await new Promise((resolve) => {
+                      img.onload = resolve;
+                      img.src = URL.createObjectURL(file);
+                    });
+                    
+                    // 计算保持原始比例的宽高
+                    let width = defaultWidth;
+                    let height = defaultHeight;
+                    const aspectRatio = img.width / img.height;
+                    
+                    // 如果原始图片更宽，以宽度为主
+                    if (img.width > img.height) {
+                      width = defaultWidth;
+                      height = Math.round(defaultWidth / aspectRatio);
+                    } else {
+                      // 如果原始图片更高，以高度为主
+                      height = defaultHeight;
+                      width = Math.round(defaultHeight * aspectRatio);
+                    }
+                    
+                    // 释放URL对象
+                    URL.revokeObjectURL(img.src);
+                    
+                    // 返回HTML img标签而不是纯URL
                     setUploadMessage('图片上传成功！');
                     setTimeout(() => setUploadMessage(''), 2000);
-                    return url;
+                    return `<img src="${url}" width="${width}" height="${height}" alt="${file.name}">`;
                   } catch (error) {
                     setUploadMessage(`上传失败：${error instanceof Error ? error.message : '未知错误'}`);
                     setTimeout(() => setUploadMessage(''), 3000);

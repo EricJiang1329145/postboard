@@ -135,21 +135,71 @@ app.get('/api/announcements', (req, res) => {
   });
 });
 
+// 用于记录最近的阅读记录，防止同一IP短时间内重复增加阅读次数
+const recentReads = new Map();
+const READ_COOLDOWN = 60000; // 冷却时间：1分钟（60000毫秒）
+
 // 获取单个公告
 app.get('/api/announcements/:id', (req, res) => {
   const { id } = req.params;
+  const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+  const key = `${clientIP}:${id}`;
+  const now = Date.now();
   
-  db.get(`SELECT * FROM announcements WHERE id = ?`, [id], (err, row) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
+  // 检查是否在冷却时间内
+  if (recentReads.has(key)) {
+    const lastReadTime = recentReads.get(key);
+    if (now - lastReadTime < READ_COOLDOWN) {
+      // 直接获取公告，不增加阅读次数
+      db.get(`SELECT * FROM announcements WHERE id = ?`, [id], (err, row) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        if (!row) {
+          res.status(404).json({ error: '公告不存在' });
+          return;
+        }
+        res.json(row);
+      });
       return;
     }
-    if (!row) {
-      res.status(404).json({ error: '公告不存在' });
-      return;
+  }
+  
+  // 更新最近阅读记录
+  recentReads.set(key, now);
+  
+  // 清理过期的记录，避免内存泄漏
+  for (const [recordKey, timestamp] of recentReads.entries()) {
+    if (now - timestamp > READ_COOLDOWN) {
+      recentReads.delete(recordKey);
     }
-    res.json(row);
-  });
+  }
+  
+  // 首先增加阅读次数
+  db.run(
+    `UPDATE announcements SET readCount = readCount + 1 WHERE id = ?`,
+    [id],
+    (err) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      // 然后获取更新后的公告
+      db.get(`SELECT * FROM announcements WHERE id = ?`, [id], (err, row) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        if (!row) {
+          res.status(404).json({ error: '公告不存在' });
+          return;
+        }
+        res.json(row);
+      });
+    }
+  );
 });
 
 // 创建公告
@@ -175,10 +225,11 @@ app.post('/api/announcements', (req, res) => {
   const createdAt = new Date().toISOString();
   const updatedAt = createdAt;
   const id = generateId();
+  const readCount = 0; // 默认阅读次数为0
   
   db.run(
-    `INSERT INTO announcements (id, title, content, category, author, createdAt, updatedAt, isPublished, scheduledPublishAt, publishStatus, isPinned, pinnedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, title, content, category, author, createdAt, updatedAt, isPublished ? 1 : 0, scheduledPublishAt, publishStatus, isPinned ? 1 : 0, pinnedAt],
+    `INSERT INTO announcements (id, title, content, category, author, createdAt, updatedAt, isPublished, scheduledPublishAt, publishStatus, isPinned, pinnedAt, readCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, title, content, category, author, createdAt, updatedAt, isPublished ? 1 : 0, scheduledPublishAt, publishStatus, isPinned ? 1 : 0, pinnedAt, readCount],
     (err) => {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -240,7 +291,7 @@ app.put('/api/announcements/:id', (req, res) => {
     
     const updatedAt = new Date().toISOString();
     
-    // 构建更新语句
+    // 构建更新语句（不包括readCount字段）
     const updateFields = [
       `title = ?`,
       `content = ?`,
@@ -352,6 +403,72 @@ app.post('/api/auth/login', (req, res) => {
         // 删除密码字段后返回用户信息
         const { password: _, ...user } = row;
         res.json(user);
+      }
+    }
+  );
+});
+
+// 修改密码
+app.post('/api/auth/change-password', (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  
+  // 首先获取当前登录用户（这里假设只有一个admin用户，实际项目中应该使用认证令牌）
+  db.get(
+    `SELECT * FROM users WHERE role = 'admin'`,
+    [],
+    (err, user) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      if (!user) {
+        res.status(404).json({ error: '用户不存在' });
+        return;
+      }
+      
+      // 验证旧密码
+      const isHashedPassword = user.password.startsWith('$2b$');
+      
+      const validatePassword = (isValid) => {
+        if (!isValid) {
+          res.status(401).json({ error: '旧密码错误' });
+          return;
+        }
+        
+        // 哈希新密码
+        bcrypt.hash(newPassword, 10, (hashErr, hashedPassword) => {
+          if (hashErr) {
+            res.status(500).json({ error: hashErr.message });
+            return;
+          }
+          
+          // 更新密码
+          db.run(
+            `UPDATE users SET password = ?, updatedAt = ? WHERE id = ?`,
+            [hashedPassword, new Date().toISOString(), user.id],
+            (updateErr) => {
+              if (updateErr) {
+                res.status(500).json({ error: updateErr.message });
+                return;
+              }
+              res.json({ success: true, message: '密码修改成功' });
+            }
+          );
+        });
+      };
+      
+      if (isHashedPassword) {
+        // 使用bcrypt验证哈希密码
+        bcrypt.compare(oldPassword, user.password, (bcryptErr, result) => {
+          if (bcryptErr) {
+            res.status(500).json({ error: bcryptErr.message });
+            return;
+          }
+          validatePassword(result);
+        });
+      } else {
+        // 直接比较明文密码（用于向后兼容）
+        validatePassword(oldPassword === user.password);
       }
     }
   );

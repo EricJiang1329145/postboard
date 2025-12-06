@@ -13,6 +13,7 @@ export interface Announcement {
   isPinned: boolean; // 是否置顶
   pinnedAt: string | null; // 置顶时间
   priority: number; // 置顶优先级（1-5，数字越大优先级越高）
+  readCount: number; // 阅读次数
 }
 
 // 用户类型定义
@@ -30,11 +31,19 @@ export interface LoginForm {
   password: string;
 }
 
+// 修改密码表单类型
+export interface ChangePasswordForm {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 // 公告表单类型
 export interface AnnouncementForm {
   title: string;
   content: string;
   category: string;
+  author: string; // 作者名称
   isPublished: boolean;
   scheduledPublishAt: string | null; // 定时发布时间
   publishStatus: 'draft' | 'scheduled' | 'published'; // 发布状态

@@ -17,6 +17,11 @@ const AdminDashboard = () => {
               公告管理
             </NavLink>
           </li>
+          <li>
+            <NavLink to="/admin/change-password" className={({ isActive }) => isActive ? 'active' : ''}>
+              修改密码
+            </NavLink>
+          </li>
         </ul>
       </aside>
       

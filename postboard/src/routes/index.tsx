@@ -7,6 +7,7 @@ import AdminDashboard from '../pages/AdminDashboard';
 import CreateAnnouncement from '../pages/CreateAnnouncement';
 import EditAnnouncement from '../pages/EditAnnouncement';
 import AdminAnnouncements from '../pages/AdminAnnouncements';
+import ChangePassword from '../pages/ChangePassword';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -26,29 +27,26 @@ export const router = createBrowserRouter([
         path: 'login',
         element: <Login />
       },
-      {
-        path: 'admin',
+      { path: 'admin',
         element: <ProtectedRoute />,
         children: [
-          {
-            path: '',
+          { path: '',
             element: <AdminDashboard />,
             children: [
-              {
-                index: true,
+              { index: true,
                 element: <CreateAnnouncement />
               },
-              {
-                path: 'create',
+              { path: 'create',
                 element: <CreateAnnouncement />
               },
-              {
-                path: 'announcements',
+              { path: 'announcements',
                 element: <AdminAnnouncements />
               },
-              {
-                path: 'edit/:id',
+              { path: 'edit/:id',
                 element: <EditAnnouncement />
+              },
+              { path: 'change-password',
+                element: <ChangePassword />
               }
             ]
           }
