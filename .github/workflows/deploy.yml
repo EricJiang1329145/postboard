@@ -41,9 +41,20 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
+          # 显示当前目录结构和文件内容，便于调试
+          echo "Current directory: $(pwd)"
+          echo "Directory structure:"
+          ls -la
+          echo "postboard/dist directory content:"
+          ls -la postboard/dist
+          
           # 创建临时目录用于部署
           mkdir -p deploy-temp
           cp -r postboard/dist/* deploy-temp/
+          
+          # 显示临时目录内容
+          echo "deploy-temp directory content:"
+          ls -la deploy-temp
           
           # 初始化 git 仓库并部署
           cd deploy-temp
@@ -51,5 +62,6 @@ jobs:
           git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git checkout -b gh-pages
           git add .
+          git status
           git commit -m "Deploy to GitHub Pages"
-          git push --force origin gh-pages
+          git push --force origin gh-pages --verbose
