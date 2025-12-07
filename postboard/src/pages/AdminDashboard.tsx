@@ -19,6 +19,11 @@ const AdminDashboard = () => {
             </NavLink>
           </li>
           <li>
+            <NavLink to="/admin/calendar" className={({ isActive }) => isActive ? 'active' : ''}>
+              活动日历管理
+            </NavLink>
+          </li>
+          <li>
             <NavLink to="/admin/admin-management" className={({ isActive }) => isActive ? 'active' : ''}>
               管理员管理
             </NavLink>

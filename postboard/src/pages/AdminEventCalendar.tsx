@@ -1,13 +1,13 @@
 import React from 'react';
 import Calendar from '../components/Calendar';
 
-const EventCalendar: React.FC = () => {
+const AdminEventCalendar: React.FC = () => {
   return (
-    <div className="event-calendar-page">
-      <Calendar isAdmin={false} />
+    <div className="admin-event-calendar-page">
+      <Calendar isAdmin={true} />
       
       <style jsx>{`
-        .event-calendar-page {
+        .admin-event-calendar-page {
           min-height: 100vh;
           background-color: #f7fafc;
         }
@@ -16,4 +16,4 @@ const EventCalendar: React.FC = () => {
   );
 };
 
-export default EventCalendar;
+export default AdminEventCalendar;

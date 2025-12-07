@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Announcement, User, Event } from '../types';
+import { Announcement, User } from '../types';
 import dayjs from 'dayjs';
-import { announcementApi, userApi, eventApi } from '../services/announcementApi';
+import { announcementApi, userApi } from '../services/announcementApi';
 
 // 生成唯一ID
 const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
@@ -206,7 +206,7 @@ export const useUserStore = create<UserStore & {
         set({ currentUser: null });
       },
       
-      register: (username: string, password: string, role: 'admin' | 'user') => {
+      register: (username, password, role) => {
         // 实际项目中应该使用API调用
         const newUser: User = {
           id: generateId(),
@@ -225,71 +225,4 @@ export const useUserStore = create<UserStore & {
       partialize: (state) => ({ currentUser: state.currentUser }) // 只存储 currentUser 字段
     }
   )
-);
-
-// 活动日历状态管理
-interface EventStore {
-  events: Event[];
-  fetchEvents: () => Promise<void>;
-  addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateEvent: (id: string, event: Partial<Event>) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
-  getEventById: (id: string) => Event | undefined;
-}
-
-export const useEventStore = create<EventStore>()(
-  (set, get) => ({
-    events: [],
-    
-    // 获取所有活动
-    fetchEvents: async () => {
-      try {
-        const events = await eventApi.getAllEvents();
-        set({ events });
-      } catch (error) {
-        console.error('获取活动列表失败:', error);
-      }
-    },
-    
-    // 添加活动
-    addEvent: async (event) => {
-      try {
-        const newEvent = await eventApi.createEvent(event);
-        set((state) => ({
-          events: [...state.events, newEvent]
-        }));
-      } catch (error) {
-        console.error('添加活动失败:', error);
-      }
-    },
-    
-    // 更新活动
-    updateEvent: async (id, event) => {
-      try {
-        const updatedEvent = await eventApi.updateEvent(id, event as any);
-        set((state) => ({
-          events: state.events.map((e) => e.id === id ? updatedEvent : e)
-        }));
-      } catch (error) {
-        console.error('更新活动失败:', error);
-      }
-    },
-    
-    // 删除活动
-    deleteEvent: async (id) => {
-      try {
-        await eventApi.deleteEvent(id);
-        set((state) => ({
-          events: state.events.filter((e) => e.id !== id)
-        }));
-      } catch (error) {
-        console.error('删除活动失败:', error);
-      }
-    },
-    
-    // 获取单个活动
-    getEventById: (id) => {
-      return get().events.find((event) => event.id === id);
-    }
-  })
 );

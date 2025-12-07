@@ -10,12 +10,15 @@ import AdminAnnouncements from '../pages/AdminAnnouncements';
 import ChangePassword from '../pages/ChangePassword';
 import AdminManagement from '../pages/AdminManagement';
 import EventCalendar from '../pages/EventCalendar';
+import AdminEventCalendar from '../pages/AdminEventCalendar';
+import NotFound from '../pages/NotFound';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
+    errorElement: <NotFound />,
     children: [
       {
         index: true,
@@ -26,7 +29,7 @@ export const router = createBrowserRouter([
         element: <AnnouncementDetail />
       },
       {
-        path: 'events',
+        path: 'calendar',
         element: <EventCalendar />
       },
       {
@@ -56,11 +59,19 @@ export const router = createBrowserRouter([
               },
               { path: 'admin-management',
                 element: <AdminManagement />
+              },
+              { path: 'calendar',
+                element: <AdminEventCalendar />
               }
             ]
           }
         ]
       }
     ]
+  },
+  // 匹配所有未匹配的路由
+  {
+    path: '*',
+    element: <NotFound />
   }
 ]);

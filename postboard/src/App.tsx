@@ -39,7 +39,7 @@ function App() {
               <Link to="/">公告列表</Link>
             </li>
             <li>
-              <Link to="/events">活动日历</Link>
+              <Link to="/calendar">活动日历</Link>
             </li>
             {currentUser ? (
               <>

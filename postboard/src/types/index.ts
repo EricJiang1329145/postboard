@@ -65,16 +65,19 @@ export interface Event {
   id: string;
   title: string;
   description: string;
-  startDate: string; // 开始时间，格式：YYYY-MM-DDTHH:mm:ss
-  endDate: string; // 结束时间，格式：YYYY-MM-DDTHH:mm:ss
+  startDate: string;
+  endDate: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// 活动日历表单类型
+// 活动表单类型
 export interface EventForm {
   title: string;
   description: string;
   startDate: string;
   endDate: string;
 }
+
+// 日历视图类型
+export type CalendarViewType = 'month' | 'week' | 'day';
