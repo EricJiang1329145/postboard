@@ -259,16 +259,13 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
                       setShowEventDetail(true);
                     }}
                   >
-                    <div className="event-time">
-                      <div className="event-start-time">
-                        {format(new Date(event.startDate), 'HH:mm')}
-                      </div>
-                      <div className="event-end-time">
-                        {format(new Date(event.endDate), 'HH:mm')}
-                      </div>
-                    </div>
                     <div className="event-info">
                       <div className="event-title">{event.title}</div>
+                      <div className="event-date">
+                      {event.startDate === event.endDate ? 
+                        `${format(new Date(event.startDate), 'MM月dd日')}${event.startTime ? ` ${event.startTime}` : ''}${event.endTime ? ` - ${event.endTime}` : ''}` : 
+                        `${format(new Date(event.startDate), 'MM月dd日')}${event.startTime ? ` ${event.startTime}` : ''} - ${format(new Date(event.endDate), 'MM月dd日')}${event.endTime ? ` ${event.endTime}` : ''}`}
+                    </div>
                       <div className="event-description">{event.description}</div>
                     </div>
                   </div>
@@ -576,7 +573,6 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
 
         .day-event-item {
           display: flex;
-          gap: 16px;
           padding: 16px;
           background-color: #f7fafc;
           border-radius: 8px;
@@ -596,22 +592,6 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
           opacity: 0.8;
         }
 
-        .event-time {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          min-width: 60px;
-          padding-right: 16px;
-          border-right: 1px solid #e2e8f0;
-        }
-
-        .event-start-time,
-        .event-end-time {
-          font-size: 14px;
-          font-weight: 500;
-          color: #2d3748;
-        }
-
         .event-info {
           flex: 1;
         }
@@ -620,7 +600,14 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
           font-size: 16px;
           font-weight: 500;
           color: #2d3748;
+          margin-bottom: 4px;
+        }
+
+        .event-date {
+          font-size: 14px;
+          color: #3182ce;
           margin-bottom: 8px;
+          font-weight: 500;
         }
 
         .event-description {

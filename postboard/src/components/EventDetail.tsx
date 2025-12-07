@@ -16,7 +16,17 @@ const EventDetail: React.FC<EventDetailProps> = ({
   onDelete, 
   onClose 
 }) => {
-  // 格式化日期时间
+  // 格式化日期（仅显示到天）
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  // 格式化日期时间（用于创建和更新时间）
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString('zh-CN', {
@@ -42,12 +52,18 @@ const EventDetail: React.FC<EventDetailProps> = ({
         <h4>时间信息</h4>
         <div className="event-time">
           <div className="time-item">
-            <span className="time-label">开始时间：</span>
-            <span className="time-value">{formatDateTime(event.startDate)}</span>
+            <span className="time-label">开始日期：</span>
+            <span className="time-value">{formatDate(event.startDate)}</span>{' '}
+            {event.startTime && (
+              <span className="time-suffix">{event.startTime}</span>
+            )}
           </div>
           <div className="time-item">
-            <span className="time-label">结束时间：</span>
-            <span className="time-value">{formatDateTime(event.endDate)}</span>
+            <span className="time-label">结束日期：</span>
+            <span className="time-value">{formatDate(event.endDate)}</span>{' '}
+            {event.endTime && (
+              <span className="time-suffix">{event.endTime}</span>
+            )}
           </div>
         </div>
       </div>
@@ -140,6 +156,12 @@ const EventDetail: React.FC<EventDetailProps> = ({
         .time-value,
         .meta-value {
           color: #2d3748;
+          margin-right: 8px;
+        }
+
+        .time-suffix {
+          color: #3182ce;
+          font-weight: 500;
         }
 
         .detail-actions {

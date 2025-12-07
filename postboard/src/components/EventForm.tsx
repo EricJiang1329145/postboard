@@ -14,6 +14,8 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
     description: '',
     startDate: '',
     endDate: '',
+    startTime: '',
+    endTime: '',
   });
 
   const [errors, setErrors] = useState<Partial<EventFormType>>({});
@@ -24,18 +26,22 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
       setFormData({
         title: event.title,
         description: event.description,
-        startDate: event.startDate.slice(0, 16), // 保留到分钟
-        endDate: event.endDate.slice(0, 16), // 保留到分钟
+        startDate: event.startDate.slice(0, 10), // 只保留到天
+        endDate: event.endDate.slice(0, 10), // 只保留到天
+        startTime: event.startTime || '', // 可选的开始时间
+        endTime: event.endTime || '', // 可选的结束时间
       });
     } else {
-      // 默认开始时间为当前时间，结束时间为当前时间后1小时
+      // 默认开始时间为今天，结束时间为今天
       const now = new Date();
-      const end = new Date(now.getTime() + 60 * 60 * 1000);
+      const today = now.toISOString().slice(0, 10);
       setFormData({
         title: '',
         description: '',
-        startDate: now.toISOString().slice(0, 16),
-        endDate: end.toISOString().slice(0, 16),
+        startDate: today,
+        endDate: today,
+        startTime: '',
+        endTime: '',
       });
     }
   }, [event]);
@@ -53,18 +59,31 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
     }
 
     if (!formData.startDate) {
-      newErrors.startDate = '请选择开始时间';
+      newErrors.startDate = '请选择开始日期';
     }
 
     if (!formData.endDate) {
-      newErrors.endDate = '请选择结束时间';
+      newErrors.endDate = '请选择结束日期';
     }
 
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
-      if (end <= start) {
-        newErrors.endDate = '结束时间必须晚于开始时间';
+      if (end < start) {
+        newErrors.endDate = '结束日期必须晚于或等于开始日期';
+      }
+    }
+
+    // 如果选择了精确到时分，开始时间和结束时间必须都填写
+    if ((formData.startTime && !formData.endTime) || (!formData.startTime && formData.endTime)) {
+      newErrors.startTime = '如果选择了时分，开始时间和结束时间必须都填写';
+      newErrors.endTime = '如果选择了时分，开始时间和结束时间必须都填写';
+    }
+
+    // 如果开始日期和结束日期相同，且填写了时间，确保结束时间晚于开始时间
+    if (formData.startDate === formData.endDate && formData.startTime && formData.endTime) {
+      if (formData.endTime <= formData.startTime) {
+        newErrors.endTime = '结束时间必须晚于开始时间';
       }
     }
 
@@ -81,12 +100,19 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
     }
 
     try {
+      // 确保日期格式为 ISO 格式（包含时间部分，但时间固定为 00:00:00）
+      const formattedData = {
+        ...formData,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+      };
+
       if (event) {
         // 更新现有活动
-        await eventApi.updateEvent(event.id, formData);
+        await eventApi.updateEvent(event.id, formattedData);
       } else {
         // 创建新活动
-        await eventApi.createEvent(formData);
+        await eventApi.createEvent(formattedData);
       }
       onSave();
     } catch (error: any) {
@@ -152,9 +178,9 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="startDate">开始时间</label>
+          <label htmlFor="startDate">开始日期</label>
           <input
-            type="datetime-local"
+            type="date"
             id="startDate"
             name="startDate"
             value={formData.startDate}
@@ -165,9 +191,9 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="endDate">结束时间</label>
+          <label htmlFor="endDate">结束日期</label>
           <input
-            type="datetime-local"
+            type="date"
             id="endDate"
             name="endDate"
             value={formData.endDate}
@@ -175,6 +201,56 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
             className={errors.endDate ? 'error' : ''}
           />
           {errors.endDate && <div className="error-message">{errors.endDate}</div>}
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="startTime">开始时间（可选）</label>
+          <div className="time-input-container">
+            <input
+              type="time"
+              id="startTime"
+              name="startTime"
+              value={formData.startTime}
+              onChange={handleChange}
+              className={errors.startTime ? 'error' : ''}
+            />
+            {formData.startTime && (
+              <button 
+                type="button" 
+                className="clear-time-button" 
+                onClick={() => setFormData(prev => ({ ...prev, startTime: '' }))}
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {errors.startTime && <div className="error-message">{errors.startTime}</div>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="endTime">结束时间（可选）</label>
+          <div className="time-input-container">
+            <input
+              type="time"
+              id="endTime"
+              name="endTime"
+              value={formData.endTime}
+              onChange={handleChange}
+              className={errors.endTime ? 'error' : ''}
+            />
+            {formData.endTime && (
+              <button 
+                type="button" 
+                className="clear-time-button" 
+                onClick={() => setFormData(prev => ({ ...prev, endTime: '' }))}
+              >
+                ×
+              </button>
+            )}
+          </div>
+          {errors.endTime && <div className="error-message">{errors.endTime}</div>}
         </div>
       </div>
 
@@ -224,6 +300,44 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
           font-size: 14px;
           transition: border-color 0.2s;
           box-sizing: border-box;
+        }
+
+        /* 时间输入容器样式 */
+        .time-input-container {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        /* 清空时间按钮样式 */
+        .clear-time-button {
+          position: absolute;
+          right: 8px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: none;
+          border: none;
+          font-size: 18px;
+          cursor: pointer;
+          color: #718096;
+          padding: 0;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: all 0.2s;
+        }
+
+        .clear-time-button:hover {
+          background-color: #e2e8f0;
+          color: #4a5568;
+        }
+
+        /* 确保输入框有足够的右边距，避免被清空按钮遮挡 */
+        input[type="time"] {
+          padding-right: 30px;
         }
 
         input:focus,

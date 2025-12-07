@@ -98,3 +98,40 @@ export const adminApi = {
     return response.data;
   }
 };
+
+// 活动日历相关API
+export const eventApi = {
+  // 获取所有活动
+  getAllEvents: async () => {
+    console.log('Calling API: GET /events');
+    const response = await api.get('/api/events');
+    console.log('API response:', response.data);
+    return response.data;
+  },
+  
+  // 获取单个活动
+  getEventById: async (id: string) => {
+    const response = await api.get(`/api/events/${id}`);
+    return response.data;
+  },
+  
+  // 创建活动
+  createEvent: async (event: { title: string; description: string; startDate: string; endDate: string }) => {
+    console.log('Calling API: POST /events with data:', event);
+    const response = await api.post('/api/events', event);
+    console.log('API response:', response.data);
+    return response.data;
+  },
+  
+  // 更新活动
+  updateEvent: async (id: string, event: { title: string; description: string; startDate: string; endDate: string }) => {
+    const response = await api.put(`/api/events/${id}`, event);
+    return response.data;
+  },
+  
+  // 删除活动
+  deleteEvent: async (id: string) => {
+    const response = await api.delete(`/api/events/${id}`);
+    return response.data;
+  }
+};

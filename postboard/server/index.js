@@ -951,9 +951,15 @@ app.get('/api/events/:id', (req, res) => {
   });
 });
 
+// 格式化日期为YYYY-MM-DD格式（仅保留到天）
+const formatDateToDay = (dateString) => {
+  const date = new Date(dateString);
+  return date.toISOString().slice(0, 10);
+};
+
 // 创建活动
 app.post('/api/events', (req, res) => {
-  const { title, description, startDate, endDate } = req.body;
+  let { title, description, startDate, endDate, startTime, endTime } = req.body;
   
   // 验证必填字段
   if (!title || !description || !startDate || !endDate) {
@@ -961,16 +967,20 @@ app.post('/api/events', (req, res) => {
     return;
   }
   
+  // 格式化日期，仅保留到天
+  startDate = formatDateToDay(startDate);
+  endDate = formatDateToDay(endDate);
+  
   // 验证结束时间晚于开始时间
-  if (new Date(endDate) <= new Date(startDate)) {
-    res.status(400).json({ error: '结束时间必须晚于开始时间' });
+  if (new Date(endDate) < new Date(startDate)) {
+    res.status(400).json({ error: '结束时间必须晚于或等于开始时间' });
     return;
   }
   
   // 防止重复添加完全相同的活动
   db.get(
-    `SELECT * FROM events WHERE title = ? AND description = ? AND startDate = ? AND endDate = ?`,
-    [title, description, startDate, endDate],
+    `SELECT * FROM events WHERE title = ? AND description = ? AND startDate = ? AND endDate = ? AND startTime = ? AND endTime = ?`,
+    [title, description, startDate, endDate, startTime || null, endTime || null],
     (err, existingEvent) => {
       if (err) {
         res.status(500).json({ error: err.message });
@@ -987,8 +997,8 @@ app.post('/api/events', (req, res) => {
       const id = generateId();
       
       db.run(
-        `INSERT INTO events (id, title, description, startDate, endDate, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [id, title, description, startDate, endDate, createdAt, updatedAt],
+        `INSERT INTO events (id, title, description, startDate, endDate, startTime, endTime, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, title, description, startDate, endDate, startTime || null, endTime || null, createdAt, updatedAt],
         (err) => {
           if (err) {
             res.status(500).json({ error: err.message });
@@ -1025,18 +1035,28 @@ app.put('/api/events/:id', (req, res) => {
       return;
     }
     
+    // 格式化日期，仅保留到天
+    const startDate = updates.startDate ? formatDateToDay(updates.startDate) : row.startDate;
+    const endDate = updates.endDate ? formatDateToDay(updates.endDate) : row.endDate;
+    
     // 验证结束时间晚于开始时间
-    const startDate = updates.startDate || row.startDate;
-    const endDate = updates.endDate || row.endDate;
-    if (new Date(endDate) <= new Date(startDate)) {
-      res.status(400).json({ error: '结束时间必须晚于开始时间' });
+    if (new Date(endDate) < new Date(startDate)) {
+      res.status(400).json({ error: '结束时间必须晚于或等于开始时间' });
       return;
     }
     
     // 防止重复添加完全相同的活动（排除当前活动）
     db.get(
-      `SELECT * FROM events WHERE title = ? AND description = ? AND startDate = ? AND endDate = ? AND id != ?`,
-      [updates.title || row.title, updates.description || row.description, startDate, endDate, id],
+      `SELECT * FROM events WHERE title = ? AND description = ? AND startDate = ? AND endDate = ? AND startTime = ? AND endTime = ? AND id != ?`,
+      [
+        updates.title || row.title,
+        updates.description || row.description,
+        startDate,
+        endDate,
+        updates.startTime || null,
+        updates.endTime || null,
+        id
+      ],
       (err, existingEvent) => {
         if (err) {
           res.status(500).json({ error: err.message });
@@ -1051,12 +1071,14 @@ app.put('/api/events/:id', (req, res) => {
         const updatedAt = new Date().toISOString();
         
         db.run(
-          `UPDATE events SET title = ?, description = ?, startDate = ?, endDate = ?, updatedAt = ? WHERE id = ?`,
+          `UPDATE events SET title = ?, description = ?, startDate = ?, endDate = ?, startTime = ?, endTime = ?, updatedAt = ? WHERE id = ?`,
           [
             updates.title || row.title,
             updates.description || row.description,
             startDate,
             endDate,
+            updates.startTime || null,
+            updates.endTime || null,
             updatedAt,
             id
           ],

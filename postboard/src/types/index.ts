@@ -67,6 +67,8 @@ export interface Event {
   description: string;
   startDate: string;
   endDate: string;
+  startTime?: string; // 可选，活动开始时间（HH:mm）
+  endTime?: string; // 可选，活动结束时间（HH:mm）
   createdAt: string;
   updatedAt: string;
 }
@@ -77,6 +79,8 @@ export interface EventForm {
   description: string;
   startDate: string;
   endDate: string;
+  startTime?: string; // 可选，活动开始时间（HH:mm）
+  endTime?: string; // 可选，活动结束时间（HH:mm）
 }
 
 // 日历视图类型
