@@ -1,16 +1,22 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useUserStore, useAnnouncementStore } from './context/useStore';
+import { useUserStore, useAnnouncementStore, useThemeStore } from './context/useStore';
 
 function App() {
   const { currentUser, logout } = useUserStore();
   const { checkScheduledAnnouncements } = useAnnouncementStore();
+  const { isDarkMode, toggleDarkMode } = useThemeStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
+
+  // 监听主题变化，应用到body元素
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   // 添加定时检查机制，每60秒检查一次待发布的公告
   useEffect(() => {
@@ -41,6 +47,26 @@ function App() {
             <li>
               <Link to="/calendar">活动日历</Link>
             </li>
+            <li>
+              <button 
+                onClick={toggleDarkMode} 
+                style={{ 
+                  background: 'none', 
+                  border: 'none', 
+                  color: 'var(--text-primary)', 
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+                title={isDarkMode ? '切换到浅色模式' : '切换到深色模式'}
+              >
+                {isDarkMode ? '🌞' : '🌙'}
+                {isDarkMode ? '浅色' : '深色'}
+              </button>
+            </li>
             {currentUser ? (
               <>
                 <li>
@@ -52,7 +78,7 @@ function App() {
                     style={{ 
                       background: 'none', 
                       border: 'none', 
-                      color: '#333', 
+                      color: 'var(--text-primary)', 
                       cursor: 'pointer',
                       fontWeight: '500',
                       fontSize: '1rem'

@@ -226,3 +226,33 @@ export const useUserStore = create<UserStore & {
     }
   )
 );
+
+// 暗黑模式状态管理
+interface ThemeStore {
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
+  setDarkMode: (isDark: boolean) => void;
+}
+
+export const useThemeStore = create<ThemeStore>()(
+  persist(
+    (set) => ({
+      // 默认使用系统主题
+      isDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+      
+      toggleDarkMode: () => {
+        set((state) => ({
+          isDarkMode: !state.isDarkMode
+        }));
+      },
+      
+      setDarkMode: (isDark) => {
+        set({ isDarkMode: isDark });
+      }
+    }),
+    {
+      name: 'theme-storage', // localStorage 存储名称
+      partialize: (state) => ({ isDarkMode: state.isDarkMode }) // 只存储 isDarkMode 字段
+    }
+  )
+);

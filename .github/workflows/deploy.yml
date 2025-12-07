@@ -1,0 +1,42 @@
+name: Deploy to GitHub Pages
+
+on:
+  # 当推送到 main 分支时触发部署
+  push:
+    branches: [ main ]
+  # 允许从 Actions 选项卡手动触发部署
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: postboard/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./postboard
+        run: npm install
+      
+      - name: Build the project
+        working-directory: ./postboard
+        run: npm run build
+      
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          # 部署的目录，即 Vite 构建输出目录
+          folder: postboard/dist
+          # 部署到 gh-pages 分支
+          branch: gh-pages
+          # 部署后删除旧文件
+          clean: true
