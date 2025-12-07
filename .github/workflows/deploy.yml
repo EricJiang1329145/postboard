@@ -36,11 +36,20 @@ jobs:
         run: npm run build
       
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          # 部署的目录，即 Vite 构建输出目录
-          folder: postboard/dist
-          # 部署到 gh-pages 分支
-          branch: gh-pages
-          # 部署后删除旧文件
-          clean: true
+        run: |
+          # 配置 git 用户名和邮箱
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # 创建临时目录用于部署
+          mkdir -p deploy-temp
+          cp -r postboard/dist/* deploy-temp/
+          
+          # 初始化 git 仓库并部署
+          cd deploy-temp
+          git init
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git checkout -b gh-pages
+          git add .
+          git commit -m "Deploy to GitHub Pages"
+          git push --force origin gh-pages
