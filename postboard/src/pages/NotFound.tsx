@@ -13,7 +13,7 @@ const NotFound: React.FC = () => {
         </Link>
       </div>
       
-      <style jsx>{`
+      <style>{`
         .not-found-container {
           display: flex;
           justify-content: center;

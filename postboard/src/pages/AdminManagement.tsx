@@ -6,7 +6,7 @@ interface Admin {
   id: string;
   username: string;
   password: string;
-  originalPassword: string;
+
   role: string;
   createdAt: string;
 }
@@ -22,7 +22,6 @@ const AdminManagement: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newAdmin, setNewAdmin] = useState({
     username: '',
-    originalPassword: '',
     password: '',
     confirmPassword: ''
   });
@@ -31,7 +30,6 @@ const AdminManagement: React.FC = () => {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordUpdate, setPasswordUpdate] = useState({
     adminId: '',
-    originalPassword: '',
     newPassword: '',
     confirmNewPassword: ''
   });
@@ -74,9 +72,9 @@ const AdminManagement: React.FC = () => {
     
     try {
       setLoading(true);
-      await adminApi.createAdmin(newAdmin.username, newAdmin.password, newAdmin.originalPassword || newAdmin.password, 'winterless');
+      await adminApi.createAdmin(newAdmin.username, newAdmin.password, 'winterless');
       setMessage('管理员添加成功');
-      setNewAdmin({ username: '', originalPassword: '', password: '', confirmPassword: '' });
+      setNewAdmin({ username: '', password: '', confirmPassword: '' });
       setShowAddForm(false);
       loadAdmins();
       // 3秒后清除消息
@@ -107,11 +105,11 @@ const AdminManagement: React.FC = () => {
       await adminApi.updateAdminPassword(
         passwordUpdate.adminId, 
         passwordUpdate.newPassword, 
-        passwordUpdate.originalPassword || passwordUpdate.newPassword, 
+
         'winterless'
       );
       setMessage('密码修改成功');
-      setPasswordUpdate({ adminId: '', originalPassword: '', newPassword: '', confirmNewPassword: '' });
+      setPasswordUpdate({ adminId: '', newPassword: '', confirmNewPassword: '' });
       setShowPasswordForm(false);
       loadAdmins();
       // 3秒后清除消息
@@ -157,7 +155,6 @@ const AdminManagement: React.FC = () => {
   const openPasswordForm = (admin: Admin) => {
     setPasswordUpdate({
       adminId: admin.id,
-      originalPassword: '',
       newPassword: '',
       confirmNewPassword: ''
     });
@@ -222,21 +219,6 @@ const AdminManagement: React.FC = () => {
             </div>
             
             <div className="form-group">
-              <label htmlFor="originalPassword">原始密码</label>
-              <input
-                type="text"
-                id="originalPassword"
-                placeholder="输入原始密码，用于查看和管理"
-                value={newAdmin.originalPassword}
-                onChange={(e) => setNewAdmin({ ...newAdmin, originalPassword: e.target.value })}
-                className="form-input"
-              />
-              <p className="help-text">
-                原始密码会被明文保存，用于管理员查看。如果不输入，将使用密码字段的值作为原始密码。
-              </p>
-            </div>
-            
-            <div className="form-group">
               <label htmlFor="password">登录密码</label>
               <input
                 type="password"
@@ -285,21 +267,6 @@ const AdminManagement: React.FC = () => {
         <div className="card mb-4 p-6 fade-in">
           <h2 className="mb-4">修改管理员密码</h2>
           <form onSubmit={handleUpdatePassword}>
-            <div className="form-group">
-              <label htmlFor="originalPassword">原始密码</label>
-              <input
-                type="text"
-                id="originalPassword"
-                placeholder="输入原始密码，用于查看和管理"
-                value={passwordUpdate.originalPassword}
-                onChange={(e) => setPasswordUpdate({ ...passwordUpdate, originalPassword: e.target.value })}
-                className="form-input"
-              />
-              <p className="help-text">
-                原始密码会被明文保存，用于管理员查看。如果不输入，将使用新密码作为原始密码。
-              </p>
-            </div>
-            
             <div className="form-group">
               <label htmlFor="newPassword">新登录密码</label>
               <input
@@ -374,26 +341,7 @@ const AdminManagement: React.FC = () => {
               admins.map((admin) => (
                 <tr key={admin.id} className="fade-in">
                   <td className="py-3 px-4">{admin.username}</td>
-                  {/* 原始密码列 */}
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span 
-                        className="tag tag-success"
-                      >
-                        {admin.originalPassword || '无'}
-                      </span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(admin.originalPassword || '');
-                          setMessage('原始密码已复制到剪贴板');
-                          setTimeout(() => setMessage(''), 2000);
-                        }}
-                        className="btn btn-sm btn-secondary"
-                      >
-                        复制
-                      </button>
-                    </div>
-                  </td>
+
                   {/* 哈希密码列 */}
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2 flex-wrap">

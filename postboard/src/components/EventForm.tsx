@@ -263,7 +263,7 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .event-form {
           padding: 20px;
         }
@@ -410,6 +410,71 @@ const EventForm: React.FC<EventFormProps> = ({ event, onSave, onCancel }) => {
         .save-button:disabled {
           background-color: #a0aec0;
           cursor: not-allowed;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+          .event-form {
+            padding: 15px;
+          }
+
+          .form-row {
+            flex-direction: column;
+            gap: 15px;
+          }
+
+          .form-row .form-group {
+            min-width: auto;
+          }
+
+          .form-group {
+            margin-bottom: 15px;
+          }
+
+          label {
+            font-size: 13px;
+            margin-bottom: 6px;
+          }
+
+          input,
+          textarea {
+            padding: 9px;
+            font-size: 13px;
+          }
+
+          /* 调整时间输入容器的样式 */
+          input[type="time"] {
+            padding-right: 28px;
+          }
+
+          .clear-time-button {
+            font-size: 16px;
+            width: 18px;
+            height: 18px;
+          }
+
+          textarea {
+            min-height: 80px;
+          }
+
+          .error-message {
+            font-size: 11px;
+            margin-top: 3px;
+          }
+
+          .form-actions {
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 25px;
+            padding-top: 15px;
+          }
+
+          .cancel-button,
+          .save-button {
+            padding: 9px 18px;
+            font-size: 13px;
+            width: 100%;
+          }
         }
       `}</style>
     </form>

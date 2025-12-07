@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as BigCalendar, dateFnsLocalizer, Event as CalendarEvent } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, addMonths, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, addMonths, startOfDay, endOfDay } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Event } from '../types';
@@ -82,7 +82,7 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
   }, [selectedDay, localEvents]);
 
   // 处理活动点击事件
-  const handleEventClick = (event: CalendarEvent) => {
+  const handleEventClick = (event: any) => {
     // 查找对应的本地活动
     const localEvent = localEvents.find(e => e.id === event.id);
     if (localEvent) {
@@ -210,15 +210,15 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
           style={{ height: 600 }}
           eventPropGetter={(event) => {
             // 检查活动是否已结束（结束时间早于当前时间）
-            const isCompleted = new Date(event.end) < new Date();
+            const isCompleted = event.end ? new Date(event.end) < new Date() : false;
             return {
               style: {
                 backgroundColor: isCompleted ? '#a0aec0' : '#3182ce',
                 borderRadius: '4px',
                 opacity: 0.8,
                 color: 'white',
-                border: 'none',
-              },
+                border: 'none'
+              }
             };
           }}
           date={currentDate}
@@ -332,7 +332,7 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .calendar-container {
           max-width: 1200px;
           margin: 0 auto;
@@ -679,6 +679,111 @@ const Calendar: React.FC<CalendarProps> = ({ isAdmin = false }) => {
 
         .close-button:hover {
           background-color: #f7fafc;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+          .calendar-container {
+            padding: 10px;
+          }
+
+          .calendar-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+
+          .calendar-navigation {
+            padding: 8px;
+            gap: 5px;
+          }
+
+          .nav-button {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+          }
+
+          .current-date {
+            font-size: 14px;
+            min-width: 120px;
+          }
+
+          .today-button {
+            padding: 6px 12px;
+            font-size: 13px;
+          }
+
+          .calendar-wrapper {
+            padding: 5px;
+          }
+
+          .rbc-calendar {
+            height: 500px;
+          }
+
+          .rbc-date-cell {
+            padding: 5px;
+          }
+
+          .rbc-event {
+            padding: 2px 4px;
+            font-size: 11px;
+          }
+
+          .day-events-container {
+            padding: 15px;
+            margin-top: 15px;
+          }
+
+          .day-events-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 15px;
+          }
+
+          .day-events-header h3 {
+            font-size: 16px;
+          }
+
+          .event-count {
+            padding: 3px 10px;
+            font-size: 13px;
+          }
+
+          .day-events-list {
+            gap: 8px;
+          }
+
+          .day-event-item {
+            padding: 12px;
+          }
+
+          .event-title {
+            font-size: 14px;
+          }
+
+          .event-date {
+            font-size: 13px;
+          }
+
+          .event-description {
+            font-size: 13px;
+          }
+
+          .modal-content {
+            width: 95%;
+            max-height: 90vh;
+          }
+
+          .modal-header {
+            padding: 12px 16px;
+          }
+
+          .modal-header h3 {
+            font-size: 18px;
+          }
         }
       `}</style>
     </div>

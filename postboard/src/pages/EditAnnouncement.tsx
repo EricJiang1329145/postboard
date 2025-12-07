@@ -7,7 +7,7 @@ import MDEditor from '@uiw/react-md-editor';
 import remarkMath from 'remark-math';
 import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+
 import 'katex/dist/katex.min.css';
 import { useAnnouncementStore } from '../context/useStore';
 import { AnnouncementForm } from '../types';
@@ -64,7 +64,7 @@ const EditAnnouncement = () => {
     setValue,
     watch
   } = useForm<AnnouncementForm>({
-    resolver: yupResolver(announcementSchema),
+    resolver: yupResolver(announcementSchema) as any,
     defaultValues: {
       title: '',
       content: '',
@@ -187,7 +187,7 @@ const EditAnnouncement = () => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit<AnnouncementForm>(onSubmit)} className="card fade-in">
+      <form onSubmit={handleSubmit(onSubmit)} className="card fade-in">
         <div className="form-group">
           <label htmlFor="title" id="title-label">标题</label>
           <input
@@ -384,7 +384,7 @@ const EditAnnouncement = () => {
                 <MDEditor.Markdown 
                   source={content || '# 请输入内容'} 
                   remarkPlugins={[remarkMath, remarkGfm]} 
-                  rehypePlugins={[rehypeKatex, rehypeRaw]}
+                  rehypePlugins={[[rehypeKatex as any, { strict: false, throwOnError: false, trust: false }]]}
                 />
               </div>
             ) : (

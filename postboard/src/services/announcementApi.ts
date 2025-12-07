@@ -81,14 +81,14 @@ export const adminApi = {
   },
   
   // 新增管理员
-  createAdmin: async (username: string, password: string, originalPassword: string, currentUser: string) => {
-    const response = await api.post('/admins', { username, password, originalPassword, currentUser });
+  createAdmin: async (username: string, password: string, currentUser: string) => {
+    const response = await api.post('/admins', { username, password, currentUser });
     return response.data;
   },
   
   // 修改管理员密码
-  updateAdminPassword: async (id: string, newPassword: string, originalPassword: string, currentUser: string) => {
-    const response = await api.put(`/admins/${id}/password`, { newPassword, originalPassword, currentUser });
+  updateAdminPassword: async (id: string, newPassword: string, currentUser: string) => {
+    const response = await api.put(`/admins/${id}/password`, { newPassword, currentUser });
     return response.data;
   },
   

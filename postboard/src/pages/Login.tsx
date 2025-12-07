@@ -66,10 +66,10 @@ const Login = () => {
             登录
           </button>
           
-          <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: '#7f8c8d' }}>
+          {/* <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: '#7f8c8d' }}>
             <p>测试账号: admin</p>
             <p>测试密码: admin123</p>
-          </div>
+          </div> */}
         </form>
       </div>
     </div>

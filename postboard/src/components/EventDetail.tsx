@@ -99,7 +99,7 @@ const EventDetail: React.FC<EventDetailProps> = ({
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .event-detail {
           padding: 20px;
         }
@@ -211,6 +211,79 @@ const EventDetail: React.FC<EventDetailProps> = ({
 
         .close-button:hover {
           background-color: #cbd5e0;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+          .event-detail {
+            padding: 15px;
+          }
+
+          .detail-section {
+            margin-bottom: 20px;
+          }
+
+          .event-title {
+            font-size: 18px;
+            margin-bottom: 12px;
+          }
+
+          .event-description {
+            padding: 12px;
+            font-size: 13px;
+          }
+
+          h4 {
+            font-size: 15px;
+            margin-bottom: 10px;
+          }
+
+          .time-item,
+          .meta-item {
+            font-size: 13px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+          }
+
+          .time-label,
+          .meta-label {
+            width: auto;
+            font-size: 12px;
+          }
+
+          .time-value,
+          .meta-value {
+            font-size: 13px;
+            margin-right: 0;
+          }
+
+          .time-suffix {
+            font-size: 13px;
+          }
+
+          .event-time,
+          .event-meta {
+            gap: 6px;
+          }
+
+          .detail-actions {
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+          }
+
+          .edit-button,
+          .delete-button,
+          .close-button {
+            padding: 9px 18px;
+            font-size: 13px;
+            width: 100%;
+          }
+
+          .detail-footer {
+            justify-content: center;
+          }
         }
       `}</style>
     </div>

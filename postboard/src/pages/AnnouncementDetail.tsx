@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import remarkGfm from 'remark-gfm';
 import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
+
 import 'katex/dist/katex.min.css';
 import dayjs from 'dayjs';
 
@@ -104,9 +104,8 @@ const AnnouncementDetail = () => {
               [rehypeKatex as any, {
                 strict: false,
                 throwOnError: false,
-                trust: true
-              }],
-              rehypeRaw as any
+                trust: false
+              }]
             ]}
             components={{
               // 自定义表格样式

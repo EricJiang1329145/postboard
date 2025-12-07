@@ -9,6 +9,7 @@ const fs = require('fs');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const schedule = require('node-schedule');
+const xss = require('xss'); // 引入XSS过滤库
 
 // 确保uploads目录存在
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
@@ -51,10 +52,67 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // 配置中间件
-app.use(cors()); // 允许跨域请求
+app.use(cors({ 
+  origin: ['http://localhost:5173', 'http://localhost:3000'], // 只允许指定的源
+  credentials: true, // 允许携带凭证
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 允许的HTTP方法
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'] // 允许的请求头
+})); // 配置CORS策略
 app.use(morgan('dev')); // 日志记录
 app.use(bodyParser.json()); // 解析 JSON 请求体
 app.use(bodyParser.urlencoded({ extended: true })); // 解析 URL 编码请求体
+
+// 生成CSRF令牌
+const generateCSRFToken = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+// 存储CSRF令牌（实际项目中应使用session或redis存储）
+const csrfTokens = new Map(); // key: userId, value: token
+
+// CSRF令牌验证中间件
+const csrfProtection = (req, res, next) => {
+  // 允许GET请求通过（GET请求通常不会修改数据）
+  if (req.method === 'GET') {
+    return next();
+  }
+  
+  // 检查Origin或Referer头
+  const origin = req.get('Origin');
+  const referer = req.get('Referer');
+  const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+  
+  // 检查Origin是否在允许列表中
+  if (origin && !allowedOrigins.includes(origin)) {
+    return res.status(403).json({ error: '无效的Origin头' });
+  }
+  
+  // 检查Referer是否在允许列表中
+  if (referer) {
+    const refererOrigin = referer.split('/').slice(0, 3).join('/');
+    if (!allowedOrigins.includes(refererOrigin)) {
+      return res.status(403).json({ error: '无效的Referer头' });
+    }
+  }
+  
+  // 从请求头中获取CSRF令牌
+  const csrfToken = req.get('X-CSRF-Token');
+  
+  // 检查CSRF令牌是否存在且有效
+  // 注意：这里简化了验证逻辑，实际项目中应从session或数据库中获取并验证令牌
+  // 由于当前项目没有使用session，我们暂时跳过令牌验证，仅验证Origin和Referer头
+  
+  next();
+};
+
+// 应用CSRF保护中间件到所有非GET请求
+app.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    csrfProtection(req, res, next);
+  } else {
+    next();
+  }
+});
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
@@ -336,7 +394,12 @@ app.get('/api/announcements/:id', (req, res) => {
 
 // 创建公告
 app.post('/api/announcements', (req, res) => {
-  const { title, content, category, author, isPublished, scheduledPublishAt, isPinned } = req.body;
+  // 对用户输入进行XSS过滤
+  const title = xss(req.body.title || '');
+  const content = xss(req.body.content || '');
+  const category = xss(req.body.category || '');
+  const author = xss(req.body.author || '');
+  const { isPublished, scheduledPublishAt, isPinned } = req.body;
   
   // 验证必填字段
   if (!title || !content || !category || !author) {
@@ -437,7 +500,11 @@ app.put('/api/announcements/:id', (req, res) => {
     
     // 获取旧内容和新内容
     const oldContent = row.content;
-    const newContent = updates.content || row.content;
+    // 对用户输入进行XSS过滤
+    const newContent = xss(updates.content || row.content);
+    const newTitle = xss(updates.title || row.title);
+    const newCategory = xss(updates.category || row.category);
+    const newAuthor = xss(updates.author || row.author);
     
     // 构建更新语句（不包括readCount字段）
     const updateFields = [
@@ -454,10 +521,10 @@ app.put('/api/announcements/:id', (req, res) => {
     ];
     
     const params = [
-      updates.title || row.title,
+      newTitle,
       newContent,
-      updates.category || row.category,
-      updates.author || row.author,
+      newCategory,
+      newAuthor,
       isPublished,
       updates.scheduledPublishAt || row.scheduledPublishAt,
       publishStatus,
@@ -692,7 +759,7 @@ const isWinterlessUser = (req, res, next) => {
 // 获取所有管理员
 app.get('/api/admins', (req, res) => {
   db.all(
-    `SELECT id, username, password, originalPassword, role, createdAt FROM users WHERE role = 'admin'`,
+    `SELECT id, username, password, role, createdAt FROM users WHERE role = 'admin'`,
     [],
     (err, rows) => {
       if (err) {
@@ -706,7 +773,7 @@ app.get('/api/admins', (req, res) => {
 
 // 新增管理员
 app.post('/api/admins', (req, res) => {
-  const { username, password, originalPassword, currentUser } = req.body;
+  const { username, password, currentUser } = req.body;
   
   // 只有 winterless 用户可以添加管理员
   if (currentUser !== 'winterless') {
@@ -739,10 +806,10 @@ app.post('/api/admins', (req, res) => {
         const id = Date.now().toString();
         const createdAt = new Date().toISOString();
         
-        // 插入新管理员，保存原始密码
+        // 插入新管理员
         db.run(
-          `INSERT INTO users (id, username, password, originalPassword, role, createdAt) VALUES (?, ?, ?, ?, ?, ?)`,
-          [id, username, hashedPassword, originalPassword || password, 'admin', createdAt],
+          `INSERT INTO users (id, username, password, role, createdAt) VALUES (?, ?, ?, ?, ?)`,
+          [id, username, hashedPassword, 'admin', createdAt],
           (insertErr) => {
             if (insertErr) {
               res.status(500).json({ error: insertErr.message });
@@ -759,7 +826,7 @@ app.post('/api/admins', (req, res) => {
 // 修改管理员密码
 app.put('/api/admins/:id/password', (req, res) => {
   const { id } = req.params;
-  const { newPassword, originalPassword, currentUser } = req.body;
+  const { newPassword, currentUser } = req.body;
   
   // 只有 winterless 用户可以修改管理员密码
   if (currentUser !== 'winterless') {
@@ -774,10 +841,10 @@ app.put('/api/admins/:id/password', (req, res) => {
       return;
     }
     
-    // 更新密码和原始密码
+    // 更新密码
     db.run(
-      `UPDATE users SET password = ?, originalPassword = ?, updatedAt = ? WHERE id = ? AND role = 'admin'`,
-      [hashedPassword, originalPassword || newPassword, new Date().toISOString(), id],
+      `UPDATE users SET password = ?, updatedAt = ? WHERE id = ? AND role = 'admin'`,
+      [hashedPassword, new Date().toISOString(), id],
       (updateErr) => {
         if (updateErr) {
           res.status(500).json({ error: updateErr.message });

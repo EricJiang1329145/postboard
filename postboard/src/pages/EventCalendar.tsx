@@ -6,7 +6,7 @@ const EventCalendar: React.FC = () => {
     <div className="event-calendar-page">
       <Calendar isAdmin={false} />
       
-      <style jsx>{`
+      <style>{`
         .event-calendar-page {
           min-height: 100vh;
           background-color: #f7fafc;
