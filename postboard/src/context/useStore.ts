@@ -19,7 +19,7 @@ interface AnnouncementStore {
 interface UserStore {
   currentUser: User | null;
   users: User[];
-  login: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   register: (username: string, password: string, role: 'admin' | 'user') => void;
 }
@@ -39,7 +39,8 @@ const initialAnnouncements: Announcement[] = [
     publishStatus: 'published',
     isPinned: true,
     pinnedAt: dayjs().subtract(1, 'day').toISOString(),
-    priority: 5 // 最高优先级
+    priority: 5, // 最高优先级
+    readCount: 0 // 阅读次数
   },
   {
     id: '2',
@@ -54,7 +55,8 @@ const initialAnnouncements: Announcement[] = [
     publishStatus: 'published',
     isPinned: false,
     pinnedAt: null,
-    priority: 1 // 默认优先级
+    priority: 1, // 默认优先级
+    readCount: 0 // 阅读次数
   }
 ];
 

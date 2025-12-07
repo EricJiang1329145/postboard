@@ -7,6 +7,8 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const schedule = require('node-schedule');
 
 // 确保uploads目录存在
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
@@ -70,6 +72,77 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // 生成唯一 ID
 const generateId = () => Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 
+// 计算文件哈希值
+const calculateHash = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('md5');
+    const stream = fs.createReadStream(filePath);
+    
+    stream.on('error', reject);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+};
+
+// 解析内容中的图片URL
+const extractImageUrls = (content) => {
+  const imageUrlRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
+  const urls = [];
+  let match;
+  
+  while ((match = imageUrlRegex.exec(content)) !== null) {
+    urls.push(match[1]);
+  }
+  
+  return urls;
+};
+
+// 更新图片引用计数
+const updateImageReferences = async (oldContent, newContent) => {
+  return new Promise((resolve, reject) => {
+    // 解析旧内容和新内容中的图片URL
+    const oldUrls = oldContent ? extractImageUrls(oldContent) : [];
+    const newUrls = newContent ? extractImageUrls(newContent) : [];
+    
+    // 找出需要增加和减少引用计数的图片
+    const urlsToAdd = newUrls.filter(url => !oldUrls.includes(url));
+    const urlsToRemove = oldUrls.filter(url => !newUrls.includes(url));
+    
+    // 减少引用计数
+    const decrementPromises = urlsToRemove.map(url => {
+      return new Promise((resolveDecrement, rejectDecrement) => {
+        db.run(
+          `UPDATE images SET referenceCount = MAX(referenceCount - 1, 0), updatedAt = ? WHERE url = ?`,
+          [new Date().toISOString(), url],
+          (err) => {
+            if (err) rejectDecrement(err);
+            else resolveDecrement();
+          }
+        );
+      });
+    });
+    
+    // 增加引用计数
+    const incrementPromises = urlsToAdd.map(url => {
+      return new Promise((resolveIncrement, rejectIncrement) => {
+        db.run(
+          `UPDATE images SET referenceCount = referenceCount + 1, updatedAt = ? WHERE url = ?`,
+          [new Date().toISOString(), url],
+          (err) => {
+            if (err) rejectIncrement(err);
+            else resolveIncrement();
+          }
+        );
+      });
+    });
+    
+    // 执行所有更新
+    Promise.all([...decrementPromises, ...incrementPromises])
+      .then(() => resolve())
+      .catch(err => reject(err));
+  });
+};
+
 // 检查并发布到期的定时公告
 function checkScheduledAnnouncements() {
   const now = new Date().toISOString();
@@ -104,6 +177,65 @@ setInterval(checkScheduledAnnouncements, 60000);
 
 // 手动检查一次
 checkScheduledAnnouncements();
+
+// 定期清理未使用的图片（每天凌晨2点执行）
+const cleanupUnusedImages = () => {
+  try {
+    console.log('开始清理未使用的图片...');
+    
+    // 找出引用计数为0且超过30天的图片
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    
+    db.all(
+      `SELECT id, filename, url FROM images WHERE referenceCount = 0 AND createdAt < ?`,
+      [thirtyDaysAgo],
+      (err, unusedImages) => {
+        if (err) {
+          console.error('查询未使用图片失败:', err.message);
+          return;
+        }
+        
+        console.log(`找到 ${unusedImages.length} 张未使用的图片`);
+        
+        // 删除每张图片
+        unusedImages.forEach(image => {
+          const filePath = path.join(uploadsDir, image.filename);
+          
+          // 删除图片文件
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log(`删除图片文件: ${filePath}`);
+          } else {
+            console.log(`图片文件不存在: ${filePath}`);
+          }
+          
+          // 从数据库中移除
+          db.run(
+            `DELETE FROM images WHERE id = ?`,
+            [image.id],
+            (err) => {
+              if (err) {
+                console.error(`从数据库中删除图片失败: ${image.id}`, err.message);
+              } else {
+                console.log(`从数据库中删除图片: ${image.id}`);
+              }
+            }
+          );
+        });
+        
+        console.log('未使用图片清理完成');
+      }
+    );
+  } catch (error) {
+    console.error('清理未使用图片失败:', error.message);
+  }
+};
+
+// 每天凌晨2点执行清理任务
+schedule.scheduleJob('0 2 * * *', cleanupUnusedImages);
+
+// 手动运行一次清理任务（用于测试）
+// cleanupUnusedImages();
 
 // API 路由
 
@@ -235,6 +367,18 @@ app.post('/api/announcements', (req, res) => {
         res.status(500).json({ error: err.message });
         return;
       }
+      
+      // 更新图片引用计数
+      if (content) {
+        const imageUrls = extractImageUrls(content);
+        imageUrls.forEach(url => {
+          db.run(
+            `UPDATE images SET referenceCount = referenceCount + 1, updatedAt = ? WHERE url = ?`,
+            [createdAt, url]
+          );
+        });
+      }
+      
       // 返回创建的公告
       db.get(`SELECT * FROM announcements WHERE id = ?`, [id], (err, row) => {
         if (err) {
@@ -291,6 +435,10 @@ app.put('/api/announcements/:id', (req, res) => {
     
     const updatedAt = new Date().toISOString();
     
+    // 获取旧内容和新内容
+    const oldContent = row.content;
+    const newContent = updates.content || row.content;
+    
     // 构建更新语句（不包括readCount字段）
     const updateFields = [
       `title = ?`,
@@ -307,7 +455,7 @@ app.put('/api/announcements/:id', (req, res) => {
     
     const params = [
       updates.title || row.title,
-      updates.content || row.content,
+      newContent,
       updates.category || row.category,
       updates.author || row.author,
       isPublished,
@@ -327,6 +475,34 @@ app.put('/api/announcements/:id', (req, res) => {
           res.status(500).json({ error: err.message });
           return;
         }
+        
+        // 更新图片引用计数
+        if (oldContent !== newContent) {
+          // 解析旧内容和新内容中的图片URL
+          const oldUrls = extractImageUrls(oldContent);
+          const newUrls = extractImageUrls(newContent);
+          
+          // 找出需要增加和减少引用计数的图片
+          const urlsToAdd = newUrls.filter(url => !oldUrls.includes(url));
+          const urlsToRemove = oldUrls.filter(url => !newUrls.includes(url));
+          
+          // 减少不再使用的图片的引用计数
+          urlsToRemove.forEach(url => {
+            db.run(
+              `UPDATE images SET referenceCount = MAX(referenceCount - 1, 0), updatedAt = ? WHERE url = ?`,
+              [updatedAt, url]
+            );
+          });
+          
+          // 增加新图片的引用计数
+          urlsToAdd.forEach(url => {
+            db.run(
+              `UPDATE images SET referenceCount = referenceCount + 1, updatedAt = ? WHERE url = ?`,
+              [updatedAt, url]
+            );
+          });
+        }
+        
         // 返回更新后的公告
         db.get(`SELECT * FROM announcements WHERE id = ?`, [id], (err, row) => {
           if (err) {
@@ -344,12 +520,37 @@ app.put('/api/announcements/:id', (req, res) => {
 app.delete('/api/announcements/:id', (req, res) => {
   const { id } = req.params;
   
-  db.run(`DELETE FROM announcements WHERE id = ?`, [id], (err) => {
+  // 先获取公告内容，用于更新图片引用计数
+  db.get(`SELECT content FROM announcements WHERE id = ?`, [id], (err, row) => {
     if (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: '获取公告内容失败' });
       return;
     }
-    res.json({ message: '公告删除成功' });
+    
+    const content = row?.content;
+    
+    // 删除公告
+    db.run(`DELETE FROM announcements WHERE id = ?`, [id], (err) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      
+      // 更新图片引用计数
+      if (content) {
+        const imageUrls = extractImageUrls(content);
+        const updatedAt = new Date().toISOString();
+        
+        imageUrls.forEach(url => {
+          db.run(
+            `UPDATE images SET referenceCount = MAX(referenceCount - 1, 0), updatedAt = ? WHERE url = ?`,
+            [updatedAt, url]
+          );
+        });
+      }
+      
+      res.json({ message: '公告删除成功' });
+    });
   });
 });
 
@@ -646,20 +847,65 @@ app.get('/api/categories', (req, res) => {
 });
 
 // 图片上传路由
-app.post('/api/upload', upload.single('image'), (req, res) => {
+app.post('/api/upload', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: '没有上传文件' });
     }
     
-    // 返回图片URL
-    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-    res.json({ 
-      success: true, 
-      url: imageUrl,
-      filename: req.file.filename 
+    // 计算图片哈希
+    const hash = await calculateHash(req.file.path);
+    
+    // 检查哈希值是否已存在
+    db.get(`SELECT * FROM images WHERE hash = ?`, [hash], async (err, existingImage) => {
+      if (err) {
+        res.status(500).json({ error: '查询图片哈希失败' });
+        return;
+      }
+      
+      if (existingImage) {
+        // 重复图片，删除临时文件，返回现有图片URL
+        fs.unlinkSync(req.file.path);
+        res.json({ 
+          success: true, 
+          url: existingImage.url,
+          filename: existingImage.filename,
+          duplicate: true // 标记为重复图片
+        });
+      } else {
+        // 新图片，生成URL
+        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+        const id = generateId();
+        const now = new Date().toISOString();
+        
+        // 保存图片信息到数据库
+        db.run(
+          `INSERT INTO images (id, hash, filename, url, referenceCount, createdAt, updatedAt, size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, hash, req.file.filename, imageUrl, 0, now, now, req.file.size],
+          (err) => {
+            if (err) {
+              // 如果保存失败，删除上传的文件
+              fs.unlinkSync(req.file.path);
+              res.status(500).json({ error: '保存图片信息失败' });
+              return;
+            }
+            
+            // 返回图片URL
+            res.json({ 
+              success: true, 
+              url: imageUrl,
+              filename: req.file.filename,
+              duplicate: false // 标记为新图片
+            });
+          }
+        );
+      }
     });
   } catch (error) {
+    // 如果计算哈希失败，删除上传的文件
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
     res.status(500).json({ error: error.message });
   }
 });

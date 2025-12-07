@@ -48,54 +48,37 @@ const AdminAnnouncements = () => {
 
   return (
     <div className="admin-announcements">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div className="page-title">
         <h2>公告管理</h2>
-        <input
-          type="text"
-          placeholder="搜索公告..."
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          style={{ maxWidth: '300px' }}
-        />
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="搜索公告..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            className="search-input"
+          />
+        </div>
       </div>
 
       <div className="announcement-list">
         {filteredAnnouncements.length === 0 ? (
-          <div className="card">
-            <p style={{ textAlign: 'center', color: '#7f8c8d' }}>
-              没有找到匹配的公告
-            </p>
+          <div className="card empty-state">
+            <h3>没有找到匹配的公告</h3>
+            <p>请尝试调整搜索关键词</p>
           </div>
         ) : (
           filteredAnnouncements.map(announcement => (
-            <div key={announcement.id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                <div>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div key={announcement.id} className="card fade-in">
+              <div className="announcement-header">
+                <div className="announcement-info">
+                  <h3 className="announcement-title">
                     {announcement.title}
                     {announcement.isPinned && (
-                      <span style={{ 
-                        backgroundColor: '#e74c3c', 
-                        color: 'white', 
-                        padding: '0.125rem 0.5rem', 
-                        borderRadius: '4px', 
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold'
-                      }}>
-                        置顶
-                      </span>
+                      <span className="status-tag danger">置顶</span>
                     )}
                     {announcement.isPinned && (
-                      <span style={{ 
-                        backgroundColor: '#3498db', 
-                        color: 'white', 
-                        padding: '0.125rem 0.5rem', 
-                        borderRadius: '4px', 
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold'
-                      }}>
-                        优先级: {announcement.priority}
-                      </span>
+                      <span className="status-tag info">优先级: {announcement.priority}</span>
                     )}
                   </h3>
                   <div className="announcement-meta">
@@ -103,28 +86,14 @@ const AdminAnnouncements = () => {
                     <span>创建时间: {dayjs(announcement.createdAt).format('YYYY-MM-DD HH:mm')}</span>
                     <span>阅读次数: {announcement.readCount}</span>
                     {announcement.scheduledPublishAt && (
-                      <span style={{ color: '#f39c12', fontSize: '0.75rem', marginLeft: '0.5rem' }}>
-                        定时发布: {dayjs(announcement.scheduledPublishAt).format('YYYY-MM-DD HH:mm')}
-                      </span>
+                      <span className="text-warning">定时发布: {dayjs(announcement.scheduledPublishAt).format('YYYY-MM-DD HH:mm')}</span>
                     )}
                     {announcement.isPinned && announcement.pinnedAt && (
-                      <span style={{ color: '#e74c3c', fontSize: '0.75rem', marginLeft: '0.5rem' }}>
-                        置顶时间: {dayjs(announcement.pinnedAt).format('YYYY-MM-DD HH:mm')}
-                      </span>
+                      <span className="text-danger">置顶时间: {dayjs(announcement.pinnedAt).format('YYYY-MM-DD HH:mm')}</span>
                     )}
                     <span 
-                      className={
-                        announcement.publishStatus === 'published' ? 'success' : 
-                        announcement.publishStatus === 'scheduled' ? 'warning' : 'error'
-                      } 
-                      style={{ 
-                        padding: '0.25rem 0.5rem', 
-                        borderRadius: '4px', 
-                        fontSize: '0.75rem',
-                        backgroundColor: announcement.publishStatus === 'published' ? '#2ecc71' : 
-                                          announcement.publishStatus === 'scheduled' ? '#f39c12' : '#e74c3c',
-                        color: 'white'
-                      }}
+                      className={`status-tag ${announcement.publishStatus === 'published' ? 'success' : 
+                        announcement.publishStatus === 'scheduled' ? 'warning' : 'error'}`}
                     >
                       {announcement.publishStatus === 'published' ? '已发布' : 
                        announcement.publishStatus === 'scheduled' ? '待发布' : '草稿'}
@@ -133,16 +102,13 @@ const AdminAnnouncements = () => {
                   
                   {/* 优先级调整控件 */}
                   {announcement.isPinned && (
-                    <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <label style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>调整优先级:</label>
+                    <div className="form-group priority-control">
+                      <label htmlFor={`priority-${announcement.id}`} className="priority-label">调整优先级:</label>
                       <select
+                        id={`priority-${announcement.id}`}
                         value={announcement.priority}
                         onChange={(e) => updatePriority(announcement.id, parseInt(e.target.value, 10))}
-                        style={{ 
-                          padding: '0.25rem 0.5rem', 
-                          borderRadius: '4px',
-                          fontSize: '0.875rem'
-                        }}
+                        className="priority-select"
                       >
                         <option value={1}>1 - 最低</option>
                         <option value={2}>2</option>
@@ -153,31 +119,31 @@ const AdminAnnouncements = () => {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div className="button-group">
                   <button 
-                    className={announcement.isPinned ? 'warning' : 'secondary'}
+                    className={`btn ${announcement.isPinned ? 'btn-warning' : 'btn-secondary'}`}
                     onClick={() => togglePin(announcement.id, announcement.isPinned)}
                   >
                     {announcement.isPinned ? '取消置顶' : '置顶'}
                   </button>
                   <button 
-                    className="secondary"
+                    className="btn btn-secondary"
                     onClick={() => togglePublish(announcement.id, announcement.isPublished)}
                   >
                     {announcement.isPublished ? '撤销发布' : '发布'}
                   </button>
                   <Link to={`/admin/edit/${announcement.id}`}>
-                    <button className="primary">编辑</button>
+                    <button className="btn btn-primary">编辑</button>
                   </Link>
                   <button 
-                    className="danger"
+                    className="btn btn-danger"
                     onClick={() => handleDelete(announcement.id)}
                   >
                     删除
                   </button>
                 </div>
               </div>
-              <p className="markdown-content" 
+              <div className="announcement-content markdown-content" 
                 dangerouslySetInnerHTML={{
                   __html: announcement.content.replace(/[#*`\[\]]/g, '').substring(0, 150) + '...'
                 }}

@@ -157,6 +157,7 @@ const AdminManagement: React.FC = () => {
   const openPasswordForm = (admin: Admin) => {
     setPasswordUpdate({
       adminId: admin.id,
+      originalPassword: '',
       newPassword: '',
       confirmNewPassword: ''
     });
@@ -166,42 +167,37 @@ const AdminManagement: React.FC = () => {
   
   return (
     <div className="admin-management-page">
-      <h1>管理员管理</h1>
+      <div className="page-title">
+        <h1>管理员管理</h1>
+      </div>
       
       {!isWinterless && (
-        <div className="alert alert-error">
+        <div className="card error-message p-4 mb-4">
           只有winterless管理员可以访问此功能
         </div>
       )}
       
       {error && (
-        <div className="alert alert-error">
+        <div className="card error-message p-4 mb-4">
           {error}
         </div>
       )}
       
       {message && (
-        <div className="alert alert-success">
+        <div className="card success-message p-4 mb-4">
           {message}
         </div>
       )}
       
       {/* 添加管理员按钮 */}
       {isWinterless && (
-        <div style={{ marginBottom: '20px' }}>
+        <div className="mb-4">
           <button 
             onClick={() => {
               setShowAddForm(true);
               setShowPasswordForm(false);
             }}
-            style={{ 
-              padding: '8px 16px', 
-              backgroundColor: '#3498db', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '4px', 
-              cursor: 'pointer'
-            }}
+            className="btn btn-primary"
           >
             添加新管理员
           </button>
@@ -210,10 +206,10 @@ const AdminManagement: React.FC = () => {
       
       {/* 添加管理员表单 */}
       {showAddForm && isWinterless && (
-        <div className="form-container" style={{ marginBottom: '20px', padding: '20px', border: '1px solid #ddd', borderRadius: '4px' }}>
-          <h2>添加新管理员</h2>
+        <div className="card mb-4 p-6 fade-in">
+          <h2 className="mb-4">添加新管理员</h2>
           <form onSubmit={handleAddAdmin}>
-            <div className="form-group" style={{ marginBottom: '15px' }}>
+            <div className="form-group">
               <label htmlFor="username">用户名</label>
               <input
                 type="text"
@@ -221,11 +217,11 @@ const AdminManagement: React.FC = () => {
                 value={newAdmin.username}
                 onChange={(e) => setNewAdmin({ ...newAdmin, username: e.target.value })}
                 required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                className="form-input"
               />
             </div>
             
-            <div className="form-group" style={{ marginBottom: '15px' }}>
+            <div className="form-group">
               <label htmlFor="originalPassword">原始密码</label>
               <input
                 type="text"
@@ -233,14 +229,14 @@ const AdminManagement: React.FC = () => {
                 placeholder="输入原始密码，用于查看和管理"
                 value={newAdmin.originalPassword}
                 onChange={(e) => setNewAdmin({ ...newAdmin, originalPassword: e.target.value })}
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                className="form-input"
               />
-              <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '5px' }}>
+              <p className="help-text">
                 原始密码会被明文保存，用于管理员查看。如果不输入，将使用密码字段的值作为原始密码。
-              </small>
+              </p>
             </div>
             
-            <div className="form-group" style={{ marginBottom: '15px' }}>
+            <div className="form-group">
               <label htmlFor="password">登录密码</label>
               <input
                 type="password"
@@ -248,11 +244,11 @@ const AdminManagement: React.FC = () => {
                 value={newAdmin.password}
                 onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
                 required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                className="form-input"
               />
             </div>
             
-            <div className="form-group" style={{ marginBottom: '15px' }}>
+            <div className="form-group">
               <label htmlFor="confirmPassword">确认密码</label>
               <input
                 type="password"
@@ -260,36 +256,22 @@ const AdminManagement: React.FC = () => {
                 value={newAdmin.confirmPassword}
                 onChange={(e) => setNewAdmin({ ...newAdmin, confirmPassword: e.target.value })}
                 required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                className="form-input"
               />
             </div>
             
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="button-group mt-4">
               <button 
                 type="submit" 
                 disabled={loading}
-                style={{ 
-                  padding: '8px 16px', 
-                  backgroundColor: '#27ae60', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  cursor: loading ? 'not-allowed' : 'pointer'
-                }}
+                className="btn btn-success"
               >
                 {loading ? '添加中...' : '添加管理员'}
               </button>
               <button 
                 type="button" 
                 onClick={() => setShowAddForm(false)}
-                style={{ 
-                  padding: '8px 16px', 
-                  backgroundColor: '#95a5a6', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer'
-                }}
+                className="btn btn-secondary"
               >
                 取消
               </button>
@@ -300,10 +282,10 @@ const AdminManagement: React.FC = () => {
       
       {/* 修改密码表单 */}
       {showPasswordForm && isWinterless && (
-        <div className="form-container" style={{ marginBottom: '20px', padding: '20px', border: '1px solid #ddd', borderRadius: '4px' }}>
-          <h2>修改管理员密码</h2>
+        <div className="card mb-4 p-6 fade-in">
+          <h2 className="mb-4">修改管理员密码</h2>
           <form onSubmit={handleUpdatePassword}>
-            <div className="form-group" style={{ marginBottom: '15px' }}>
+            <div className="form-group">
               <label htmlFor="originalPassword">原始密码</label>
               <input
                 type="text"
@@ -311,14 +293,14 @@ const AdminManagement: React.FC = () => {
                 placeholder="输入原始密码，用于查看和管理"
                 value={passwordUpdate.originalPassword}
                 onChange={(e) => setPasswordUpdate({ ...passwordUpdate, originalPassword: e.target.value })}
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                className="form-input"
               />
-              <small style={{ color: '#666', fontSize: '12px', display: 'block', marginTop: '5px' }}>
+              <p className="help-text">
                 原始密码会被明文保存，用于管理员查看。如果不输入，将使用新密码作为原始密码。
-              </small>
+              </p>
             </div>
             
-            <div className="form-group" style={{ marginBottom: '15px' }}>
+            <div className="form-group">
               <label htmlFor="newPassword">新登录密码</label>
               <input
                 type="password"
@@ -326,11 +308,11 @@ const AdminManagement: React.FC = () => {
                 value={passwordUpdate.newPassword}
                 onChange={(e) => setPasswordUpdate({ ...passwordUpdate, newPassword: e.target.value })}
                 required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                className="form-input"
               />
             </div>
             
-            <div className="form-group" style={{ marginBottom: '15px' }}>
+            <div className="form-group">
               <label htmlFor="confirmNewPassword">确认新密码</label>
               <input
                 type="password"
@@ -338,36 +320,22 @@ const AdminManagement: React.FC = () => {
                 value={passwordUpdate.confirmNewPassword}
                 onChange={(e) => setPasswordUpdate({ ...passwordUpdate, confirmNewPassword: e.target.value })}
                 required
-                style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                className="form-input"
               />
             </div>
             
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="button-group mt-4">
               <button 
                 type="submit" 
                 disabled={loading}
-                style={{ 
-                  padding: '8px 16px', 
-                  backgroundColor: '#27ae60', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  cursor: loading ? 'not-allowed' : 'pointer'
-                }}
+                className="btn btn-success"
               >
                 {loading ? '修改中...' : '修改密码'}
               </button>
               <button 
                 type="button" 
                 onClick={() => setShowPasswordForm(false)}
-                style={{ 
-                  padding: '8px 16px', 
-                  backgroundColor: '#95a5a6', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  cursor: 'pointer'
-                }}
+                className="btn btn-secondary"
               >
                 取消
               </button>
@@ -377,40 +345,40 @@ const AdminManagement: React.FC = () => {
       )}
       
       {/* 管理员列表 */}
-      <div className="admin-list" style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="card overflow-x-auto">
+        <table className="data-table">
           <thead>
-            <tr style={{ backgroundColor: '#f2f2f2' }}>
-              <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>用户名</th>
-              <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>原始密码</th>
-              <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>哈希密码</th>
-              <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>角色</th>
-              <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>创建时间</th>
-              <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>操作</th>
+            <tr>
+              <th>用户名</th>
+              <th>原始密码</th>
+              <th>哈希密码</th>
+              <th>角色</th>
+              <th>创建时间</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} style={{ padding: '20px', textAlign: 'center' }}>
+                <td colSpan={6} className="text-center py-6">
                   加载中...
+                </td>
+              </tr>
+            ) : admins.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-6">
+                  没有找到管理员
                 </td>
               </tr>
             ) : (
               admins.map((admin) => (
-                <tr key={admin.id} style={{ borderBottom: '1px solid #ddd' }}>
-                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>{admin.username}</td>
+                <tr key={admin.id} className="fade-in">
+                  <td className="py-3 px-4">{admin.username}</td>
                   {/* 原始密码列 */}
-                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span 
-                        style={{
-                          backgroundColor: '#d4edda',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          fontWeight: 'bold',
-                          wordBreak: 'break-all'
-                        }}
+                        className="tag tag-success"
                       >
                         {admin.originalPassword || '无'}
                       </span>
@@ -420,35 +388,17 @@ const AdminManagement: React.FC = () => {
                           setMessage('原始密码已复制到剪贴板');
                           setTimeout(() => setMessage(''), 2000);
                         }}
-                        style={{
-                          padding: '2px 6px',
-                          backgroundColor: '#28a745',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
+                        className="btn btn-sm btn-secondary"
                       >
                         复制
                       </button>
                     </div>
                   </td>
                   {/* 哈希密码列 */}
-                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span 
-                        style={{
-                          backgroundColor: '#f0f0f0',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          fontSize: '12px',
-                          wordBreak: 'break-all',
-                          maxWidth: '300px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}
+                        className="truncate max-w-xs"
                         title={admin.password}
                       >
                         {admin.password}
@@ -459,59 +409,36 @@ const AdminManagement: React.FC = () => {
                           setMessage('哈希密码已复制到剪贴板');
                           setTimeout(() => setMessage(''), 2000);
                         }}
-                        style={{
-                          padding: '2px 6px',
-                          backgroundColor: '#6c757d',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '3px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
+                        className="btn btn-sm btn-secondary"
                       >
                         复制
                       </button>
-                      <span style={{ fontSize: '12px', color: '#666', fontStyle: 'italic' }}>
+                      <span className="text-sm text-muted">
                         (哈希)
                       </span>
                     </div>
                   </td>
-                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>{admin.role}</td>
-                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                  <td className="py-3 px-4">{admin.role}</td>
+                  <td className="py-3 px-4">
                     {new Date(admin.createdAt).toLocaleString()}
                   </td>
-                  <td style={{ padding: '12px', border: '1px solid #ddd' }}>
+                  <td className="py-3 px-4">
                     {isWinterless && (
-                      <>
+                      <div className="button-group flex gap-1">
                         <button 
                           onClick={() => openPasswordForm(admin)}
-                          style={{ 
-                            padding: '4px 8px', 
-                            backgroundColor: '#f39c12', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
-                            cursor: 'pointer',
-                            marginRight: '5px'
-                          }}
+                          className="btn btn-sm btn-warning"
                         >
                           修改密码
                         </button>
                         <button 
                           onClick={() => handleDeleteAdmin(admin.id, admin.username)}
-                          style={{ 
-                            padding: '4px 8px', 
-                            backgroundColor: '#e74c3c', 
-                            color: 'white', 
-                            border: 'none', 
-                            borderRadius: '4px', 
-                            cursor: 'pointer'
-                          }}
+                          className="btn btn-sm btn-danger"
                           disabled={admin.username === 'winterless'}
                         >
                           删除
                         </button>
-                      </>
+                      </div>
                     )}
                   </td>
                 </tr>

@@ -85,36 +85,13 @@ const AnnouncementDetail = () => {
           </span>
         </div>
 
-        <div className="markdown-content" style={{ marginTop: '2rem' }}>
-          <style jsx>{`
-            .markdown-content table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 1rem 0;
-            }
-            .markdown-content th, .markdown-content td {
-              border: 1px solid #ddd;
-              padding: 8px;
-              text-align: left;
-            }
-            .markdown-content th {
-              background-color: #f2f2f2;
-              font-weight: bold;
-            }
-            .markdown-content tr:nth-child(even) {
-              background-color: #f9f9f9;
-            }
-            .markdown-content tr:hover {
-              background-color: #f5f5f5;
-            }
-            /* 图片尺寸控制 */
-            .markdown-content img {
-              max-width: 100%;
-              height: auto;
-              margin: 1rem 0;
-              border-radius: 4px;
-            }
-          `}</style>
+        <div className="markdown-content" style={{ 
+          marginTop: '2rem',
+          fontSize: '1rem',
+          lineHeight: '1.8',
+          color: '#333'
+        }}>
+          {/* 使用ReactMarkdown渲染Markdown内容 */}
           <ReactMarkdown
             remarkPlugins={[
               [remarkMath as any, {
@@ -131,7 +108,58 @@ const AnnouncementDetail = () => {
               }],
               rehypeRaw as any
             ]}
-            dangerouslySetInnerHTML={false}
+            components={{
+              // 自定义表格样式
+              table: ({ children, ...props }) => (
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  margin: '1rem 0'
+                }} {...props}>
+                  {children}
+                </table>
+              ),
+              th: ({ children, ...props }) => (
+                <th style={{
+                  border: '1px solid #ddd',
+                  padding: '8px',
+                  textAlign: 'left',
+                  backgroundColor: '#f2f2f2',
+                  fontWeight: 'bold'
+                }} {...props}>
+                  {children}
+                </th>
+              ),
+              td: ({ children, ...props }) => (
+                <td style={{
+                  border: '1px solid #ddd',
+                  padding: '8px',
+                  textAlign: 'left'
+                }} {...props}>
+                  {children}
+                </td>
+              ),
+              // 简化的表格行样式，React内联样式不支持伪类选择器
+              tr: ({ children, ...props }) => (
+                <tr style={{
+                  borderBottom: '1px solid #eee'
+                }} {...props}>
+                  {children}
+                </tr>
+              ),
+              // 自定义图片样式
+              img: ({ ...props }) => (
+                <img
+                  style={{
+                    maxWidth: '100%',
+                    height: 'auto',
+                    margin: '1rem 0',
+                    borderRadius: '4px'
+                  }}
+                  {...props}
+                />
+              )
+            }}
           >
             {announcement.content}
           </ReactMarkdown>

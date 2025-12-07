@@ -10,8 +10,7 @@ import 'katex/dist/katex.min.css';
 import { useAnnouncementStore, useUserStore } from '../context/useStore';
 import { AnnouncementForm } from '../types';
 import MarkdownUploader from '../components/MarkdownUploader';
-import { uploadImage } from '../services/imageUpload';
-import { image } from '@uiw/react-md-editor/commands';
+import { processImageUpload } from '../utils/imageUtils';
 
 const CreateAnnouncement = () => {
   const { addAnnouncement } = useAnnouncementStore();
@@ -52,39 +51,11 @@ const CreateAnnouncement = () => {
     setUploadMessage('');
     
     try {
-      const url = await uploadImage(file);
+      // 使用通用的图片上传处理函数
+      const imgTag = await processImageUpload(file);
       
-      // 可配置的默认宽高参数
-      const defaultWidth = 500; // 默认宽度
-      const defaultHeight = 300; // 默认高度
-      
-      // 创建图片对象获取原始宽高比例
-      const img = new Image();
-      await new Promise((resolve) => {
-        img.onload = resolve;
-        img.src = URL.createObjectURL(file);
-      });
-      
-      // 计算保持原始比例的宽高
-      let width = defaultWidth;
-      let height = defaultHeight;
-      const aspectRatio = img.width / img.height;
-      
-      // 如果原始图片更宽，以宽度为主
-      if (img.width > img.height) {
-        width = defaultWidth;
-        height = Math.round(defaultWidth / aspectRatio);
-      } else {
-        // 如果原始图片更高，以高度为主
-        height = defaultHeight;
-        width = Math.round(defaultHeight * aspectRatio);
-      }
-      
-      // 释放URL对象
-      URL.revokeObjectURL(img.src);
-      
-      // 将图片插入到编辑器中（使用HTML img标签）
-      const newContent = `${content || ''}\n<img src="${url}" width="${width}" height="${height}" alt="${file.name}">\n`;
+      // 将图片插入到编辑器中
+      const newContent = `${content || ''}\n${imgTag}\n`;
       setValue('content', newContent);
       setUploadMessage('图片上传成功！');
       setTimeout(() => setUploadMessage(''), 2000);
@@ -103,7 +74,8 @@ const CreateAnnouncement = () => {
       author: restData.author || (currentUser?.username || '管理员'),
       isPinned: restData.isPinned || false,
       priority: restData.priority || 1,
-      pinnedAt: null // 由store内部根据isPinned值处理实际的置顶时间
+      pinnedAt: null, // 由store内部根据isPinned值处理实际的置顶时间
+      readCount: 0 // 初始阅读次数设为0
     });
     navigate('/admin/announcements');
   };
@@ -112,7 +84,7 @@ const CreateAnnouncement = () => {
     <div className="create-announcement">
       <h2>创建公告</h2>
       
-      <form onSubmit={handleSubmit(onSubmit as any)}>
+      <form onSubmit={handleSubmit<AnnouncementForm>(onSubmit)} className="card fade-in">
         <div className="form-group">
           <label htmlFor="title">标题</label>
           <input
@@ -166,17 +138,16 @@ const CreateAnnouncement = () => {
               <label
                 htmlFor="image-upload"
                 style={{
-                  display: 'inline-block',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
                   padding: '0.25rem 0.75rem',
                   backgroundColor: '#3498db',
                   color: 'white',
                   border: 'none',
                   borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
+                  fontSize: '0.875rem'
                 }}
               >
                 🖼️ 上传图片
@@ -292,63 +263,16 @@ const CreateAnnouncement = () => {
               </div>
             ) : (
               <MDEditor
-                height={400}
-                value={content}
-                onChange={(value) => {
-                  setValue('content', value || '');
-                }}
-                previewOptions={{
-                  remarkPlugins: [remarkMath, remarkGfm],
-                  rehypePlugins: [rehypeKatex],
-                }}
-                onUploadImage={async (file: File) => {
-                  setUploading(true);
-                  setUploadMessage('');
-                  try {
-                    const url = await uploadImage(file);
-                    
-                    // 可配置的默认宽高参数
-                    const defaultWidth = 500; // 默认宽度
-                    const defaultHeight = 300; // 默认高度
-                    
-                    // 创建图片对象获取原始宽高比例
-                    const img = new Image();
-                    await new Promise((resolve) => {
-                      img.onload = resolve;
-                      img.src = URL.createObjectURL(file);
-                    });
-                    
-                    // 计算保持原始比例的宽高
-                    let width = defaultWidth;
-                    let height = defaultHeight;
-                    const aspectRatio = img.width / img.height;
-                    
-                    // 如果原始图片更宽，以宽度为主
-                    if (img.width > img.height) {
-                      width = defaultWidth;
-                      height = Math.round(defaultWidth / aspectRatio);
-                    } else {
-                      // 如果原始图片更高，以高度为主
-                      height = defaultHeight;
-                      width = Math.round(defaultHeight * aspectRatio);
-                    }
-                    
-                    // 释放URL对象
-                    URL.revokeObjectURL(img.src);
-                    
-                    // 返回HTML img标签而不是纯URL
-                    setUploadMessage('图片上传成功！');
-                    setTimeout(() => setUploadMessage(''), 2000);
-                    return `<img src="${url}" width="${width}" height="${height}" alt="${file.name}">`;
-                  } catch (error) {
-                    setUploadMessage(`上传失败：${error instanceof Error ? error.message : '未知错误'}`);
-                    setTimeout(() => setUploadMessage(''), 3000);
-                    throw error;
-                  } finally {
-                    setUploading(false);
-                  }
-                }}
-              />
+                  height={400}
+                  value={content}
+                  onChange={(value) => {
+                    setValue('content', value || '');
+                  }}
+                  previewOptions={{
+                    remarkPlugins: [remarkMath, remarkGfm],
+                    rehypePlugins: [rehypeKatex],
+                  }}
+                />
             )}
           </div>
           {errors.content && <div className="error">{errors.content.message}</div>}

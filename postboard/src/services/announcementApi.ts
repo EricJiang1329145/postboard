@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Announcement, AnnouncementForm } from '../types';
+import { Announcement } from '../types';
 
 // 创建axios实例
 const api = axios.create({
