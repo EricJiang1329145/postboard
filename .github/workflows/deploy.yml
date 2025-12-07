@@ -10,7 +10,7 @@ on:
 # 配置部署环境
 env:
   # 构建输出目录
-  BUILD_OUTPUT_DIR: postboard/dist
+  BUILD_OUTPUT_DIR: dist
 
 jobs:
   # 构建作业

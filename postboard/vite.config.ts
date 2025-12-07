@@ -9,6 +9,10 @@ export default defineConfig(async () => ({
   plugins: [react()],
   // GitHub Pages 部署配置，base URL 设置为仓库名称
   base: "/postboard/",
+  // 输出目录设置为项目根目录下的dist
+  build: {
+    outDir: "../dist",
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
