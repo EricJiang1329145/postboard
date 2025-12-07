@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createHashRouter } from 'react-router-dom';
 import App from '../App';
 import AnnouncementList from '../pages/AnnouncementList';
 import AnnouncementDetail from '../pages/AnnouncementDetail';
@@ -14,7 +14,7 @@ import AdminEventCalendar from '../pages/AdminEventCalendar';
 import NotFound from '../pages/NotFound';
 import ProtectedRoute from '../components/ProtectedRoute';
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: '/',
     element: <App />,
