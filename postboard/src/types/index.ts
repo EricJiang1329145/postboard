@@ -59,3 +59,22 @@ export interface SearchParams {
   sortBy: 'createdAt' | 'updatedAt';
   order: 'asc' | 'desc';
 }
+
+// 活动日历类型定义
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string; // 开始时间，格式：YYYY-MM-DDTHH:mm:ss
+  endDate: string; // 结束时间，格式：YYYY-MM-DDTHH:mm:ss
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 活动日历表单类型
+export interface EventForm {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+}

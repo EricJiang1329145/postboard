@@ -27,7 +27,7 @@ const CreateAnnouncement = () => {
     formState: { errors },
     watch,
     setValue
-  } = useForm<AnnouncementForm>({
+  } = useForm({
     defaultValues: {
       title: '',
       content: '',
@@ -84,7 +84,7 @@ const CreateAnnouncement = () => {
     <div className="create-announcement">
       <h2>创建公告</h2>
       
-      <form onSubmit={handleSubmit<AnnouncementForm>(onSubmit)} className="card fade-in">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="card fade-in">
         <div className="form-group">
           <label htmlFor="title">标题</label>
           <input
@@ -310,7 +310,7 @@ const CreateAnnouncement = () => {
                     // 设置默认时间为当前时间30分钟后
                     const defaultTime = new Date();
                     defaultTime.setMinutes(defaultTime.getMinutes() + 30);
-                    setValue('scheduledPublishAt', defaultTime.toISOString().slice(0, 16));
+                    setValue('scheduledPublishAt', defaultTime.toISOString().slice(0, 16) as any);
                   } else {
                     // 取消定时发布
                     setValue('scheduledPublishAt', null);

@@ -18,7 +18,7 @@ const ImageUploader = ({ onImageUpload, disabled = false }: ImageUploaderProps) 
     setUploadProgress(0); // 重置上传进度
     
     try {
-      const imgTag = await processImageUpload(file, (progress) => {
+      const imgTag = await processImageUpload(file, (progress: number) => {
         setUploadProgress(progress); // 更新上传进度
       });
       onImageUpload(imgTag);

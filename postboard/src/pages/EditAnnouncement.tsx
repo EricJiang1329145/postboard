@@ -57,26 +57,20 @@ const EditAnnouncement = () => {
     pinnedAt: yup.string().nullable().optional()
   });
   
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch
-  } = useForm<AnnouncementForm>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: yupResolver(announcementSchema),
     defaultValues: {
       title: '',
       content: '',
-      category: '学校通知',
+      category: '',
       author: '',
       isPublished: false,
       scheduledPublishAt: null,
       publishStatus: 'draft',
       isPinned: false,
-      priority: 3,
-      pinnedAt: null
-    }
+      priority: 1,
+      pinnedAt: null,
+    },
   });
 
   const scheduledPublishAt = watch('scheduledPublishAt');
@@ -187,7 +181,7 @@ const EditAnnouncement = () => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit<AnnouncementForm>(onSubmit)} className="card fade-in">
+      <form onSubmit={handleSubmit(onSubmit as any)} className="card fade-in">
         <div className="form-group">
           <label htmlFor="title" id="title-label">标题</label>
           <input
@@ -330,7 +324,7 @@ const EditAnnouncement = () => {
                 const img = new Image();
                 img.onload = async () => {
                   try {
-                    const url = await uploadImage(file, (progress) => {
+                    const url = await uploadImage(file, (progress: number) => {
                       setUploadProgress(progress);
                     });
                     
@@ -440,7 +434,7 @@ const EditAnnouncement = () => {
                     // 设置默认时间为当前时间30分钟后
                     const defaultTime = new Date();
                     defaultTime.setMinutes(defaultTime.getMinutes() + 30);
-                    setValue('scheduledPublishAt', defaultTime.toISOString().slice(0, 16));
+                    setValue('scheduledPublishAt', defaultTime.toISOString().slice(0, 16) as any);
                   } else {
                     // 取消定时发布
                     setValue('scheduledPublishAt', null);

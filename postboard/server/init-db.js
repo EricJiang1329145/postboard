@@ -49,6 +49,23 @@ function initDatabase() {
       }
       console.log('公告表创建成功');
       
+      // 创建活动日历表
+      db.run(`CREATE TABLE IF NOT EXISTS events (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        startDate TEXT NOT NULL,
+        endDate TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )`, (err) => {
+        if (err) {
+          console.error('创建活动日历表失败:', err.message);
+          return;
+        }
+        console.log('活动日历表创建成功');
+      });
+      
       // 生成bcrypt哈希密码
       bcrypt.hash('admin123', 10, (hashErr, hashedPassword) => {
         if (hashErr) {

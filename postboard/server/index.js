@@ -846,6 +846,172 @@ app.get('/api/categories', (req, res) => {
   });
 });
 
+// 活动日历 API
+
+// 获取所有活动
+app.get('/api/events', (req, res) => {
+  db.all(`SELECT * FROM events ORDER BY startDate ASC`, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
+  });
+});
+
+// 获取单个活动
+app.get('/api/events/:id', (req, res) => {
+  const { id } = req.params;
+  db.get(`SELECT * FROM events WHERE id = ?`, [id], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (!row) {
+      res.status(404).json({ error: '活动不存在' });
+      return;
+    }
+    res.json(row);
+  });
+});
+
+// 创建活动
+app.post('/api/events', (req, res) => {
+  const { title, description, startDate, endDate } = req.body;
+  
+  // 验证必填字段
+  if (!title || !description || !startDate || !endDate) {
+    res.status(400).json({ error: '缺少必填字段' });
+    return;
+  }
+  
+  // 验证结束时间晚于开始时间
+  if (new Date(endDate) <= new Date(startDate)) {
+    res.status(400).json({ error: '结束时间必须晚于开始时间' });
+    return;
+  }
+  
+  // 验证重复活动
+  db.get(
+    `SELECT * FROM events WHERE title = ? AND description = ? AND startDate = ? AND endDate = ?`,
+    [title, description, startDate, endDate],
+    (err, existingEvent) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      if (existingEvent) {
+        res.status(400).json({ error: '已存在相同的活动' });
+        return;
+      }
+      
+      // 创建活动
+      const id = generateId();
+      const createdAt = new Date().toISOString();
+      const updatedAt = createdAt;
+      
+      db.run(
+        `INSERT INTO events (id, title, description, startDate, endDate, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [id, title, description, startDate, endDate, createdAt, updatedAt],
+        (err) => {
+          if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+          }
+          res.status(201).json({ id, title, description, startDate, endDate, createdAt, updatedAt });
+        }
+      );
+    }
+  );
+});
+
+// 更新活动
+app.put('/api/events/:id', (req, res) => {
+  const { id } = req.params;
+  const { title, description, startDate, endDate } = req.body;
+  
+  // 验证必填字段
+  if (!title || !description || !startDate || !endDate) {
+    res.status(400).json({ error: '缺少必填字段' });
+    return;
+  }
+  
+  // 验证结束时间晚于开始时间
+  if (new Date(endDate) <= new Date(startDate)) {
+    res.status(400).json({ error: '结束时间必须晚于开始时间' });
+    return;
+  }
+  
+  // 验证活动是否存在
+  db.get(`SELECT * FROM events WHERE id = ?`, [id], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (!row) {
+      res.status(404).json({ error: '活动不存在' });
+      return;
+    }
+    
+    // 验证重复活动（排除当前活动）
+    db.get(
+      `SELECT * FROM events WHERE title = ? AND description = ? AND startDate = ? AND endDate = ? AND id != ?`,
+      [title, description, startDate, endDate, id],
+      (err, existingEvent) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        if (existingEvent) {
+          res.status(400).json({ error: '已存在相同的活动' });
+          return;
+        }
+        
+        // 更新活动
+        const updatedAt = new Date().toISOString();
+        
+        db.run(
+          `UPDATE events SET title = ?, description = ?, startDate = ?, endDate = ?, updatedAt = ? WHERE id = ?`,
+          [title, description, startDate, endDate, updatedAt, id],
+          (err) => {
+            if (err) {
+              res.status(500).json({ error: err.message });
+              return;
+            }
+            res.json({ id, title, description, startDate, endDate, createdAt: row.createdAt, updatedAt });
+          }
+        );
+      }
+    );
+  });
+});
+
+// 删除活动
+app.delete('/api/events/:id', (req, res) => {
+  const { id } = req.params;
+  
+  // 验证活动是否存在
+  db.get(`SELECT * FROM events WHERE id = ?`, [id], (err, row) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    if (!row) {
+      res.status(404).json({ error: '活动不存在' });
+      return;
+    }
+    
+    // 删除活动
+    db.run(`DELETE FROM events WHERE id = ?`, [id], (err) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({ message: '活动删除成功' });
+    });
+  });
+});
+
 // 图片上传路由
 app.post('/api/upload', upload.single('image'), async (req, res) => {
   try {

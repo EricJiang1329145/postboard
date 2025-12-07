@@ -9,6 +9,7 @@ import EditAnnouncement from '../pages/EditAnnouncement';
 import AdminAnnouncements from '../pages/AdminAnnouncements';
 import ChangePassword from '../pages/ChangePassword';
 import AdminManagement from '../pages/AdminManagement';
+import EventCalendar from '../pages/EventCalendar';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -23,6 +24,10 @@ export const router = createBrowserRouter([
       {
         path: 'announcement/:id',
         element: <AnnouncementDetail />
+      },
+      {
+        path: 'events',
+        element: <EventCalendar />
       },
       {
         path: 'login',
