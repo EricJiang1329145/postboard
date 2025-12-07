@@ -37,6 +37,26 @@ jobs:
         working-directory: ./postboard
         run: npm run build
       
+      - name: Create 404.html file for React Router compatibility
+        run: |
+          cat > ${{ env.BUILD_OUTPUT_DIR }}/404.html << 'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>Redirecting...</title>
+              <script>
+                // 将所有请求重定向到index.html，让React Router处理路由
+                window.location.replace('/postboard' + window.location.pathname + window.location.search);
+              </script>
+            </head>
+            <body>
+              <p>正在重定向到首页...</p>
+            </body>
+          </html>
+          EOF
+      
       - name: Upload build artifacts
         uses: actions/upload-pages-artifact@v3
         with:
