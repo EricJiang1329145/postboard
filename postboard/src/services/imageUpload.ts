@@ -12,7 +12,8 @@ export const uploadImage = async (file: File, onProgress?: (progress: number) =>
     const formData = new FormData();
     formData.append('image', file);
 
-    const response = await axios.post('http://localhost:3001/api/upload', formData, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    const response = await axios.post(`${apiUrl}/upload`, formData, {
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);

@@ -53,7 +53,7 @@ const PORT = process.env.PORT || 3001;
 
 // 配置中间件
 app.use(cors({ 
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // 只允许指定的源
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://ericjiang1329145.github.io'], // 允许GitHub Pages域名
   credentials: true, // 允许携带凭证
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 允许的HTTP方法
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'] // 允许的请求头
@@ -80,7 +80,7 @@ const csrfProtection = (req, res, next) => {
   // 检查Origin或Referer头
   const origin = req.get('Origin');
   const referer = req.get('Referer');
-  const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
+  const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000', 'https://ericjiang1329145.github.io'];
   
   // 检查Origin是否在允许列表中
   if (origin && !allowedOrigins.includes(origin)) {

@@ -35,6 +35,10 @@ jobs:
       
       - name: Build the project
         working-directory: ./postboard
+        env:
+          # 配置API地址，这里需要在GitHub Secrets中配置VITE_API_URL，指向部署后的后端服务地址
+          # 后端服务需要部署到其他平台（如Vercel、Render、Netlify Functions等）
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:3001/api' }}
         run: npm run build
       
       - name: Create 404.html file for React Router compatibility

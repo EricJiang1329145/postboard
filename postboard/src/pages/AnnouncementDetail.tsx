@@ -23,7 +23,8 @@ const AnnouncementDetail = () => {
     // 直接调用获取单个公告的 API 来增加阅读次数
     const loadAnnouncement = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/announcements/${id}`, {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${apiUrl}/announcements/${id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
