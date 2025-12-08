@@ -94,18 +94,28 @@ export const useAnnouncementStore = create<AnnouncementStore & {
   checkScheduledAnnouncements: () => void;
   fetchAnnouncements: () => Promise<void>;
 }>()(
-  (set, get) => ({
-    announcements: initialAnnouncements,
-    
-    // 获取公告列表
-    fetchAnnouncements: async () => {
-      try {
-        const announcements = await announcementApi.getAllAnnouncementsForAdmin();
-        set({ announcements });
-      } catch (error) {
-        console.error('获取公告列表失败:', error);
-      }
-    },
+  persist(
+    (set, get) => ({
+      announcements: initialAnnouncements,
+      
+      // 获取公告列表
+      fetchAnnouncements: async () => {
+        try {
+          // 尝试从API获取公告
+          const apiAnnouncements = await announcementApi.getAllAnnouncements();
+          set({ announcements: apiAnnouncements });
+          // 将API返回的数据保存到本地存储
+          localStorage.setItem('announcements', JSON.stringify(apiAnnouncements));
+        } catch (error) {
+          console.error('获取公告列表失败，使用本地数据:', error);
+          // API请求失败，尝试从localStorage中获取数据
+          const localAnnouncements = localStorage.getItem('announcements');
+          if (localAnnouncements) {
+            set({ announcements: JSON.parse(localAnnouncements) });
+          }
+          // 如果localStorage中没有数据，则使用初始数据
+        }
+      },
     
     addAnnouncement: async (announcement) => {
       try {
@@ -172,14 +182,18 @@ export const useAnnouncementStore = create<AnnouncementStore & {
     },
     
     // 手动检查并发布到期的定时公告
-    checkScheduledAnnouncements: () => {
-      const announcements = get().announcements;
-      const updatedAnnouncements = checkScheduledAnnouncements(announcements);
-      if (updatedAnnouncements !== announcements) {
-        set({ announcements: updatedAnnouncements });
-      }
-    }
-  })
+        checkScheduledAnnouncements: () => {
+          const announcements = get().announcements;
+          const updatedAnnouncements = checkScheduledAnnouncements(announcements);
+          if (updatedAnnouncements !== announcements) {
+            set({ announcements: updatedAnnouncements });
+          }
+        }
+      }),
+      {
+        name: 'announcement-storage', // localStorage 存储名称
+        partialize: (state) => ({ announcements: state.announcements }) // 只存储 announcements 字段
+      })
 );
 
 export const useUserStore = create<UserStore & {
